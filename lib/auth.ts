@@ -23,57 +23,73 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
+        try {
+          if (!credentials?.email || !credentials?.password) {
+            return null
+          }
+
+          await connectDB()
+          const user = await User.findOne({ email: credentials.email })
+
+          if (!user || !user.password) {
+            return null
+          }
+
+          const isPasswordValid = await bcrypt.compare(credentials.password, user.password)
+
+          if (!isPasswordValid) {
+            return null
+          }
+
+          return {
+            id: user._id.toString(),
+            email: user.email,
+            name: user.name,
+            image: user.image,
+          }
+        } catch (error: any) {
+          console.error('Authorization error:', error)
+          // Return null instead of throwing to prevent HTTP2 protocol error
           return null
-        }
-
-        await connectDB()
-        const user = await User.findOne({ email: credentials.email })
-
-        if (!user || !user.password) {
-          return null
-        }
-
-        const isPasswordValid = await bcrypt.compare(credentials.password, user.password)
-
-        if (!isPasswordValid) {
-          return null
-        }
-
-        return {
-          id: user._id.toString(),
-          email: user.email,
-          name: user.name,
-          image: user.image,
         }
       },
     }),
   ],
   callbacks: {
     async signIn({ user, account }) {
-      if (account?.provider === 'google') {
-        await connectDB()
-        const existingUser = await User.findOne({ email: user.email })
-        
-        if (!existingUser) {
-          await User.create({
-            name: user.name,
-            email: user.email,
-            image: user.image,
-          })
+      try {
+        if (account?.provider === 'google') {
+          await connectDB()
+          const existingUser = await User.findOne({ email: user.email })
+          
+          if (!existingUser) {
+            await User.create({
+              name: user.name,
+              email: user.email,
+              image: user.image,
+            })
+          }
         }
+        return true
+      } catch (error: any) {
+        console.error('SignIn callback error:', error)
+        return false // Prevent sign-in if DB operation fails
       }
-      return true
     },
     async session({ session, token }) {
-      if (session.user && token.sub) {
-        await connectDB()
-        const user = await User.findOne({ email: session.user.email })
-        if (user) {
-          session.user.id = user._id.toString()
+      try {
+        if (session.user && token.sub) {
+          await connectDB()
+          const user = await User.findOne({ email: session.user.email })
+          if (user) {
+            session.user.id = user._id.toString()
+          }
         }
+        return session
+      } catch (error: any) {
+        console.error('Session callback error:', error)
+        return session // Return session even if DB lookup fails
       }
-      return session
     },
   },
   pages: {
@@ -83,5 +99,15 @@ export const authOptions: NextAuthOptions = {
     strategy: 'jwt',
   },
   secret: process.env.NEXTAUTH_SECRET,
+  debug: process.env.NODE_ENV === 'development', // Enable debug logs in development
+}
+
+// Validate required environment variables
+if (!process.env.NEXTAUTH_SECRET) {
+  console.warn('⚠️  NEXTAUTH_SECRET is not set. Authentication may fail.')
+}
+
+if (!process.env.MONGODB_URI) {
+  console.warn('⚠️  MONGODB_URI is not set. Database connection will fail.')
 }
 
