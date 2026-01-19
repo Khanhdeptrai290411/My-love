@@ -39,10 +39,11 @@ export default function LoginPage() {
       if (result?.ok) {
         router.push('/home')
       } else {
-        alert('Đăng nhập thất bại')
+        alert(result?.error || 'Đăng nhập thất bại')
       }
-    } catch (error) {
-      alert('Có lỗi xảy ra')
+    } catch (error: any) {
+      console.error('Login error:', error)
+      alert(error?.message || 'Có lỗi xảy ra')
     } finally {
       setLoading(false)
     }
