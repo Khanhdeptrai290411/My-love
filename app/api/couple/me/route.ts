@@ -21,7 +21,7 @@ export async function GET() {
     // Use lean() to get plain object and ensure all fields are included
     const couple = await Couple.findOne({ memberIds: user._id })
       .populate('memberIds', 'name email image')
-      .lean()
+      .lean() as any
 
     if (!couple) {
       return NextResponse.json({ couple: null })

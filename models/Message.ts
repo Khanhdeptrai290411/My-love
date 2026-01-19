@@ -11,8 +11,8 @@ export interface IMessage {
 }
 
 const MessageSchema = new Schema<IMessage>({
-  coupleId: { type: Schema.Types.ObjectId, ref: 'Couple', required: true },
-  senderId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  coupleId: { type: Schema.Types.ObjectId as any, ref: 'Couple', required: true },
+  senderId: { type: Schema.Types.ObjectId as any, ref: 'User', required: true },
   text: { type: String, required: false },
   imageUrl: String,
   audioUrl: String,

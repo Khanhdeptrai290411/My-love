@@ -9,7 +9,7 @@ export interface ICouple {
 }
 
 const CoupleSchema = new Schema<ICouple>({
-  memberIds: [{ type: Schema.Types.ObjectId, ref: 'User', required: true }],
+  memberIds: [{ type: Schema.Types.ObjectId as any, ref: 'User', required: true }],
   inviteCode: { type: String, required: true, unique: true },
   startDate: { type: String, required: false }, // Ngày hẹn hò - optional để tương thích với document cũ
   createdAt: { type: Date, default: Date.now },

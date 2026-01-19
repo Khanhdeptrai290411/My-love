@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
     if (view === 'me') {
       userIds = [user._id]
     } else if (view === 'partner') {
-      const partnerId = couple.memberIds.find(id => id.toString() !== user._id.toString())
+      const partnerId = couple.memberIds.find((id: any) => id.toString() !== user._id.toString())
       if (partnerId) {
         userIds = [partnerId]
       }

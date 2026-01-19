@@ -14,8 +14,8 @@ export interface IMood {
 }
 
 const MoodSchema = new Schema<IMood>({
-  coupleId: { type: Schema.Types.ObjectId, ref: 'Couple', required: true },
-  userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  coupleId: { type: Schema.Types.ObjectId as any, ref: 'Couple', required: true },
+  userId: { type: Schema.Types.ObjectId as any, ref: 'User', required: true },
   date: { type: String, required: true },
   mood: {
     type: String,

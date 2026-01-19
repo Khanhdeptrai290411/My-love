@@ -33,7 +33,7 @@ export async function GET() {
     }
 
     const today = getTodayDate()
-    const partnerId = couple.memberIds.find(id => id.toString() !== user._id.toString())
+    const partnerId = couple.memberIds.find((id: any) => id.toString() !== user._id.toString())
 
     // Get dominant moods (highest intensity) for today
     const myEvents = await MoodEvent.find({

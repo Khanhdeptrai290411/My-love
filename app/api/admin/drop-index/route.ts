@@ -13,6 +13,9 @@ export async function POST(req: NextRequest) {
 
     await connectDB()
     const db = mongoose.connection.db
+    if (!db) {
+      throw new Error('Database connection not available')
+    }
     const collection = db.collection('posts')
 
     try {

@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
         id: couple._id.toString(),
         inviteCode: couple.inviteCode,
         startDate: couple.startDate,
-        memberIds: couple.memberIds.map(id => id.toString()),
+        memberIds: couple.memberIds.map((id: { toString(): string }) => id.toString()),
       },
     })
   } catch (error: any) {

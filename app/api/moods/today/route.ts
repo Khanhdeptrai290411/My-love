@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
     }
 
     const today = getTodayDate()
-    const partnerId = couple.memberIds.find(id => id.toString() !== user._id.toString())
+    const partnerId = couple.memberIds.find((id: any) => id.toString() !== user._id.toString())
 
     // Get all mood events for today
     const myEvents = await MoodEvent.find({

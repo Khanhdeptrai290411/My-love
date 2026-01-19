@@ -10,11 +10,11 @@ export interface IComment {
 }
 
 const CommentSchema = new Schema<IComment>({
-  postId: { type: Schema.Types.ObjectId, ref: 'Post', required: true },
-  userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  postId: { type: Schema.Types.ObjectId as any, ref: 'Post', required: true },
+  userId: { type: Schema.Types.ObjectId as any, ref: 'User', required: true },
   text: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
-  parentCommentId: { type: Schema.Types.ObjectId, ref: 'Comment', default: null },
+  parentCommentId: { type: Schema.Types.ObjectId as any, ref: 'Comment', default: null },
 })
 
 CommentSchema.index({ postId: 1, createdAt: -1 })

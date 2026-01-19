@@ -10,7 +10,7 @@ export interface IDailyQuote {
 }
 
 const DailyQuoteSchema = new Schema<IDailyQuote>({
-  coupleId: { type: Schema.Types.ObjectId, ref: 'Couple', required: true },
+  coupleId: { type: Schema.Types.ObjectId as any, ref: 'Couple', required: true },
   date: { type: String, required: true },
   text: { type: String, required: true },
   source: { type: String, enum: ['db', 'fallback'], default: 'fallback' },

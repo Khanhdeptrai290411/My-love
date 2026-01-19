@@ -17,8 +17,8 @@ export interface IPost {
 }
 
 const PostSchema = new Schema<IPost>({
-  coupleId: { type: Schema.Types.ObjectId, ref: 'Couple', required: true },
-  authorId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  coupleId: { type: Schema.Types.ObjectId as any, ref: 'Couple', required: true },
+  authorId: { type: Schema.Types.ObjectId as any, ref: 'User', required: true },
   date: { type: String, required: true },
   content: { type: String, required: true },
   images: [{
