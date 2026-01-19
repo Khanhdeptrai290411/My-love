@@ -17,11 +17,21 @@ export default function SettingsPage() {
   const [startDate, setStartDate] = useState('')
   const [isEditingDate, setIsEditingDate] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [profileSaving, setProfileSaving] = useState(false)
+  const [isEditingProfile, setIsEditingProfile] = useState(false)
+  const [profileForm, setProfileForm] = useState<{
+    name: string
+    email: string
+    gender: string
+    image: string
+  } | null>(null)
 
   const { data: coupleData, mutate } = useSWR('/api/couple/me', fetcher, {
     revalidateOnFocus: true,
     revalidateOnReconnect: true,
   })
+
+  const { data: profileData, mutate: mutateProfile } = useSWR('/api/user/profile', fetcher)
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -36,6 +46,17 @@ export default function SettingsPage() {
       setStartDate('')
     }
   }, [coupleData])
+
+  useEffect(() => {
+    if (profileData?.user) {
+      setProfileForm({
+        name: profileData.user.name || '',
+        email: profileData.user.email || '',
+        gender: profileData.user.gender || '',
+        image: profileData.user.image || '',
+      })
+    }
+  }, [profileData])
 
   // Check if current user is the creator (first member)
   const isCreator = coupleData?.couple?.members?.[0]?.email === session?.user?.email
@@ -96,6 +117,37 @@ export default function SettingsPage() {
     }
   }
 
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!profileForm) return
+
+    setProfileSaving(true)
+    try {
+      const res = await fetch('/api/user/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: profileForm.name,
+          email: profileForm.email,
+          gender: profileForm.gender || undefined,
+          image: profileForm.image || undefined,
+        }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        toast.success('Đã cập nhật hồ sơ!')
+        setIsEditingProfile(false)
+        mutateProfile()
+      } else {
+        toast.error(data.error || 'Lỗi khi cập nhật hồ sơ')
+      }
+    } catch (error) {
+      toast.error('Có lỗi xảy ra')
+    } finally {
+      setProfileSaving(false)
+    }
+  }
+
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -112,11 +164,200 @@ export default function SettingsPage() {
 
         <div className="bg-white rounded-lg shadow-md p-6 space-y-6">
           <div>
-            <h2 className="text-xl font-semibold mb-4 text-gray-700">Thông tin tài khoản</h2>
-            <div className="space-y-2">
-              <p className="text-gray-800"><span className="font-medium text-gray-900">Tên:</span> <span className="text-gray-700">{session?.user?.name}</span></p>
-              <p className="text-gray-800"><span className="font-medium text-gray-900">Email:</span> <span className="text-gray-700">{session?.user?.email}</span></p>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-gray-700">Thông tin tài khoản</h2>
+              {!isEditingProfile && (
+                <button
+                  onClick={() => setIsEditingProfile(true)}
+                  className="text-pink-500 hover:text-pink-600 text-sm font-medium"
+                >
+                  ✏️ Đổi
+                </button>
+              )}
             </div>
+
+            {isEditingProfile && profileForm ? (
+              <form onSubmit={handleUpdateProfile} className="space-y-4">
+                <div className="flex items-center gap-4">
+                  {profileForm.image ? (
+                    <div className="w-16 h-16 rounded-full overflow-hidden flex-shrink-0">
+                      <Image
+                        src={profileForm.image}
+                        alt={profileForm.name || 'Avatar'}
+                        width={64}
+                        height={64}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-pink-200 flex items-center justify-center text-pink-600 font-semibold text-xl">
+                      {profileForm.name?.charAt(0).toUpperCase() || 'U'}
+                    </div>
+                  )}
+                  <div>
+                    <button
+                      type="button"
+                      disabled={profileSaving}
+                      onClick={async () => {
+                        const input = document.createElement('input')
+                        input.type = 'file'
+                        input.accept = 'image/*'
+                        input.onchange = async (e: any) => {
+                          const file = e.target.files?.[0]
+                          if (!file) return
+                          const formData = new FormData()
+                          formData.append('file', file)
+                          try {
+                            const res = await fetch('/api/upload', { method: 'POST', body: formData })
+                            const data = await res.json()
+                            if (res.ok) {
+                              setProfileForm((prev) =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      image: data.url,
+                                    }
+                                  : prev
+                              )
+                            } else {
+                              toast.error(data.error || 'Upload ảnh thất bại')
+                            }
+                          } catch (error) {
+                            toast.error('Có lỗi xảy ra khi upload ảnh')
+                          }
+                        }
+                        input.click()
+                      }}
+                      className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 font-medium disabled:opacity-50"
+                    >
+                      Đổi ảnh đại diện
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Tên
+                    </label>
+                    <input
+                      type="text"
+                      value={profileForm.name}
+                      onChange={(e) =>
+                        setProfileForm((prev) => (prev ? { ...prev, name: e.target.value } : prev))
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-gray-900 bg-white text-sm"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      value={profileForm.email}
+                      onChange={(e) =>
+                        setProfileForm((prev) => (prev ? { ...prev, email: e.target.value } : prev))
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-gray-900 bg-white text-sm"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Giới tính
+                    </label>
+                    <select
+                      value={profileForm.gender || ''}
+                      onChange={(e) =>
+                        setProfileForm((prev) =>
+                          prev ? { ...prev, gender: e.target.value } : prev
+                        )
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-gray-900 bg-white text-sm"
+                    >
+                      <option value="">Chưa chọn</option>
+                      <option value="male">Nam</option>
+                      <option value="female">Nữ</option>
+                      <option value="other">Khác</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsEditingProfile(false)
+                      // Reset form to original values
+                      if (profileData?.user) {
+                        setProfileForm({
+                          name: profileData.user.name || '',
+                          email: profileData.user.email || '',
+                          gender: profileData.user.gender || '',
+                          image: profileData.user.image || '',
+                        })
+                      }
+                    }}
+                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 text-sm"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={profileSaving}
+                    className="bg-pink-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-pink-600 transition disabled:opacity-50"
+                  >
+                    {profileSaving ? 'Đang lưu...' : 'Lưu'}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  {profileData?.user?.image ? (
+                    <div className="w-16 h-16 rounded-full overflow-hidden flex-shrink-0">
+                      <Image
+                        src={profileData.user.image}
+                        alt={profileData.user.name || 'Avatar'}
+                        width={64}
+                        height={64}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-pink-200 flex items-center justify-center text-pink-600 font-semibold text-xl">
+                      {profileData?.user?.name?.charAt(0).toUpperCase() || session?.user?.name?.charAt(0).toUpperCase() || 'U'}
+                    </div>
+                  )}
+                  <div className="space-y-1">
+                    <p className="text-gray-800">
+                      <span className="font-medium text-gray-900">Tên:</span>{' '}
+                      <span className="text-gray-700">{profileData?.user?.name || session?.user?.name}</span>
+                    </p>
+                    <p className="text-gray-800">
+                      <span className="font-medium text-gray-900">Email:</span>{' '}
+                      <span className="text-gray-700">{profileData?.user?.email || session?.user?.email}</span>
+                    </p>
+                    <p className="text-gray-800">
+                      <span className="font-medium text-gray-900">Giới tính:</span>{' '}
+                      <span className="text-gray-700">
+                        {profileData?.user?.gender === 'male'
+                          ? 'Nam'
+                          : profileData?.user?.gender === 'female'
+                          ? 'Nữ'
+                          : profileData?.user?.gender === 'other'
+                          ? 'Khác'
+                          : 'Chưa cập nhật'}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {coupleData?.couple && (

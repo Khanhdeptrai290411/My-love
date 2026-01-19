@@ -145,81 +145,136 @@ export default function DayDetailPage({ params }: { params: { date: string } }) 
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4 text-gray-700">Bài đăng</h2>
           <div className="space-y-6">
-            {dayData?.posts?.me && (
+            {dayData?.posts?.me && dayData.posts.me.length > 0 && (
               <div>
-                <h3 className="font-medium text-gray-600 mb-2">Của mình</h3>
-                <Link
-                  href={`/post/${dayData.posts.me.id}`}
-                  className="block bg-gray-50 p-4 rounded-lg hover:bg-gray-100 transition"
-                >
-                  <p className="text-gray-800 mb-2">{dayData.posts.me.content.substring(0, 200)}{dayData.posts.me.content.length > 200 ? '...' : ''}</p>
-                  {dayData.posts.me.images?.length > 0 && (
-                    <div className="grid grid-cols-2 gap-2 mt-2">
-                      {dayData.posts.me.images.slice(0, 2).map((img: any, i: number) => (
-                        img.url.startsWith('data:') ? (
-                          <img
-                            key={i}
-                            src={img.url}
-                            alt={`Image ${i + 1}`}
-                            className="w-full h-32 object-cover rounded"
-                          />
-                        ) : (
-                          <Image
-                            key={i}
-                            src={img.url}
-                            alt={`Image ${i + 1}`}
-                            width={200}
-                            height={200}
-                            className="w-full h-32 object-cover rounded"
-                            unoptimized={img.url.startsWith('http') && !img.url.includes('cloudinary')}
-                          />
-                        )
-                      ))}
-                    </div>
-                  )}
-                  <p className="text-sm text-pink-500 mt-2">Xem chi tiết →</p>
-                </Link>
-              </div>
-            )}
-            {dayData?.posts?.partner && (
-              <div>
-                <h3 className="font-medium text-gray-600 mb-2">
-                  Của {dayData.posts.partner.author?.name || 'người ấy'}
+                <h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  <span className="text-pink-500">👤</span>
+                  Của mình
                 </h3>
-                <Link
-                  href={`/post/${dayData.posts.partner.id}`}
-                  className="block bg-gray-50 p-4 rounded-lg hover:bg-gray-100 transition"
-                >
-                  <p className="text-gray-800 mb-2">{dayData.posts.partner.content.substring(0, 200)}{dayData.posts.partner.content.length > 200 ? '...' : ''}</p>
-                  {dayData.posts.partner.images?.length > 0 && (
-                    <div className="grid grid-cols-2 gap-2 mt-2">
-                      {dayData.posts.partner.images.slice(0, 2).map((img: any, i: number) => (
-                        img.url.startsWith('data:') ? (
-                          <img
-                            key={i}
-                            src={img.url}
-                            alt={`Image ${i + 1}`}
-                            className="w-full h-32 object-cover rounded"
+                <div className="space-y-4">
+                  {dayData.posts.me.map((post: any) => (
+                    <Link
+                      key={post.id}
+                      href={`/post/${post.id}`}
+                      className="block bg-pink-50 border-l-4 border-pink-500 p-4 rounded-lg hover:bg-pink-100 transition"
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        {post.author?.image ? (
+                          <Image
+                            src={post.author.image}
+                            alt={post.author.name || 'Bạn'}
+                            width={32}
+                            height={32}
+                            className="rounded-full"
                           />
                         ) : (
-                          <Image
-                            key={i}
-                            src={img.url}
-                            alt={`Image ${i + 1}`}
-                            width={200}
-                            height={200}
-                            className="w-full h-32 object-cover rounded"
-                            unoptimized={img.url.startsWith('http') && !img.url.includes('cloudinary')}
-                          />
-                        )
-                      ))}
-                    </div>
-                  )}
-                  <p className="text-sm text-pink-500 mt-2">Xem chi tiết →</p>
-                </Link>
+                          <div className="w-8 h-8 rounded-full bg-pink-200 flex items-center justify-center text-pink-600 font-semibold text-sm">
+                            {post.author?.name?.charAt(0).toUpperCase() || session?.user?.name?.charAt(0).toUpperCase() || 'B'}
+                          </div>
+                        )}
+                        <span className="font-semibold text-gray-800">{post.author?.name || session?.user?.name || 'Bạn'}</span>
+                      </div>
+                      <p className="text-gray-800 mb-2">
+                        {post.content.substring(0, 200)}
+                        {post.content.length > 200 ? '...' : ''}
+                      </p>
+                      {post.images?.length > 0 && (
+                        <div className="grid grid-cols-2 gap-2 mt-2">
+                          {post.images.slice(0, 2).map((img: any, i: number) =>
+                            img.url.startsWith('data:') ? (
+                              <img
+                                key={i}
+                                src={img.url}
+                                alt={`Image ${i + 1}`}
+                                className="w-full h-32 object-cover rounded"
+                              />
+                            ) : (
+                              <Image
+                                key={i}
+                                src={img.url}
+                                alt={`Image ${i + 1}`}
+                                width={200}
+                                height={200}
+                                className="w-full h-32 object-cover rounded"
+                                unoptimized={img.url.startsWith('http') && !img.url.includes('cloudinary')}
+                              />
+                            )
+                          )}
+                        </div>
+                      )}
+                      <p className="text-sm text-pink-500 mt-2">Xem chi tiết →</p>
+                    </Link>
+                  ))}
+                </div>
               </div>
             )}
-            {!dayData?.posts?.me && !dayData?.posts?.partner && (
+
+            {dayData?.posts?.partner && dayData.posts.partner.length > 0 && (
+              <div>
+                <h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  <span className="text-blue-500">💙</span>
+                  Của {dayData.posts.partner[0]?.author?.name || 'người ấy'}
+                </h3>
+                <div className="space-y-4">
+                  {dayData.posts.partner.map((post: any) => (
+                    <Link
+                      key={post.id}
+                      href={`/post/${post.id}`}
+                      className="block bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg hover:bg-blue-100 transition"
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        {post.author?.image ? (
+                          <Image
+                            src={post.author.image}
+                            alt={post.author.name || 'Người ấy'}
+                            width={32}
+                            height={32}
+                            className="rounded-full"
+                          />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-blue-200 flex items-center justify-center text-blue-600 font-semibold text-sm">
+                            {post.author?.name?.charAt(0).toUpperCase() || 'N'}
+                          </div>
+                        )}
+                        <span className="font-semibold text-gray-800">{post.author?.name || 'Người ấy'}</span>
+                      </div>
+                      <p className="text-gray-800 mb-2">
+                        {post.content.substring(0, 200)}
+                        {post.content.length > 200 ? '...' : ''}
+                      </p>
+                      {post.images?.length > 0 && (
+                        <div className="grid grid-cols-2 gap-2 mt-2">
+                          {post.images.slice(0, 2).map((img: any, i: number) =>
+                            img.url.startsWith('data:') ? (
+                              <img
+                                key={i}
+                                src={img.url}
+                                alt={`Image ${i + 1}`}
+                                className="w-full h-32 object-cover rounded"
+                              />
+                            ) : (
+                              <Image
+                                key={i}
+                                src={img.url}
+                                alt={`Image ${i + 1}`}
+                                width={200}
+                                height={200}
+                                className="w-full h-32 object-cover rounded"
+                                unoptimized={img.url.startsWith('http') && !img.url.includes('cloudinary')}
+                              />
+                            )
+                          )}
+                        </div>
+                      )}
+                      <p className="text-sm text-blue-500 mt-2">Xem chi tiết →</p>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {(!dayData?.posts?.me || dayData.posts.me.length === 0) &&
+             (!dayData?.posts?.partner || dayData.posts.partner.length === 0) && (
               <p className="text-gray-500">Chưa có bài đăng nào</p>
             )}
           </div>

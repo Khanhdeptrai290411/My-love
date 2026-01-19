@@ -6,6 +6,7 @@ export interface IComment {
   userId: mongoose.Types.ObjectId
   text: string
   createdAt: Date
+  parentCommentId?: mongoose.Types.ObjectId | null
 }
 
 const CommentSchema = new Schema<IComment>({
@@ -13,6 +14,7 @@ const CommentSchema = new Schema<IComment>({
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   text: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
+  parentCommentId: { type: Schema.Types.ObjectId, ref: 'Comment', default: null },
 })
 
 CommentSchema.index({ postId: 1, createdAt: -1 })

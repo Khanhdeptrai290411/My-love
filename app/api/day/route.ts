@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Get mood events
-    const partnerId = couple.memberIds.find(id => id.toString() !== user._id.toString())
+    const partnerId = couple.memberIds.find((id: any) => id.toString() !== user._id.toString())
     
     const myMoodEvents = await MoodEvent.find({
       userId: user._id,
@@ -83,8 +83,8 @@ export async function GET(req: NextRequest) {
       .populate('authorId', 'name email image')
       .sort({ createdAt: -1 })
 
-    const myPost = posts.find(p => p.authorId.toString() === user._id.toString())
-    const partnerPost = posts.find(p => p.authorId.toString() !== user._id.toString())
+    const myPosts = posts.filter(p => p.authorId.toString() === user._id.toString())
+    const partnerPosts = posts.filter(p => p.authorId.toString() !== user._id.toString())
 
     const partner = partnerId ? await User.findById(partnerId) : null
 
@@ -125,25 +125,30 @@ export async function GET(req: NextRequest) {
         })),
       },
       posts: {
-        me: myPost ? {
-          id: myPost._id.toString(),
-          content: myPost.content,
-          images: myPost.images,
-          starred: myPost.starred,
-          createdAt: myPost.createdAt,
-        } : null,
-        partner: partnerPost ? {
-          id: partnerPost._id.toString(),
-          content: partnerPost.content,
-          images: partnerPost.images,
-          starred: partnerPost.starred,
-          createdAt: partnerPost.createdAt,
+        me: myPosts.map(p => ({
+          id: p._id.toString(),
+          content: p.content,
+          images: p.images,
+          starred: p.starred,
+          createdAt: p.createdAt,
           author: {
-            name: (partnerPost.authorId as any).name,
-            email: (partnerPost.authorId as any).email,
-            image: (partnerPost.authorId as any).image,
+            name: (p.authorId as any).name,
+            email: (p.authorId as any).email,
+            image: (p.authorId as any).image,
           },
-        } : null,
+        })),
+        partner: partnerPosts.map(p => ({
+          id: p._id.toString(),
+          content: p.content,
+          images: p.images,
+          starred: p.starred,
+          createdAt: p.createdAt,
+          author: {
+            name: (p.authorId as any).name,
+            email: (p.authorId as any).email,
+            image: (p.authorId as any).image,
+          },
+        })),
       },
       starred: posts.filter(p => p.starred).map(p => ({
         id: p._id.toString(),

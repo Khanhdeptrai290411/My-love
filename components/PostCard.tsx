@@ -28,19 +28,56 @@ const ReactionIcon = ({ type, filled = false, size = 20 }: { type: string; fille
       </svg>`
     },
     haha: {
-      empty: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      empty: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"
+        xmlns="http://www.w3.org/2000/svg">
+        
+        <!-- Face -->
         <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-        <path d="M8 14C8 14 9.5 16 12 16C14.5 16 16 14 16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        <circle cx="9" cy="9" r="1.5" fill="currentColor"/>
-        <circle cx="15" cy="9" r="1.5" fill="currentColor"/>
+    
+        <!-- Eyes: laughing (closed) -->
+        <path d="M7 9.5C8.5 8 10 8 11.5 9.5"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M12.5 9.5C14 8 15.5 8 17 9.5"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    
+        <!-- Mouth: big open laugh -->
+        <path d="M7.5 13
+                 C9.5 16.5 14.5 16.5 16.5 13
+                 Z"
+          stroke="currentColor" stroke-width="2" fill="none"
+          stroke-linejoin="round"/>
+    
+        <!-- Tongue -->
+        <path d="M10.2 14.2
+                 C10.8 15.2 13.2 15.2 13.8 14.2"
+          stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
       </svg>`,
-      filled: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+    
+      filled: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor"
+        xmlns="http://www.w3.org/2000/svg">
+    
+        <!-- Face -->
         <circle cx="12" cy="12" r="10"/>
-        <path d="M8 14C8 14 9.5 16 12 16C14.5 16 16 14 16 14" stroke="white" stroke-width="1.5" stroke-linecap="round" fill="none"/>
-        <circle cx="9" cy="9" r="1.5" fill="white"/>
-        <circle cx="15" cy="9" r="1.5" fill="white"/>
+    
+        <!-- Eyes -->
+        <path d="M7 9.5C8.5 8 10 8 11.5 9.5"
+          stroke="white" stroke-width="2" stroke-linecap="round"/>
+        <path d="M12.5 9.5C14 8 15.5 8 17 9.5"
+          stroke="white" stroke-width="2" stroke-linecap="round"/>
+    
+        <!-- Mouth -->
+        <path d="M7.5 13
+                 C9.5 16.5 14.5 16.5 16.5 13
+                 Z"
+          fill="white"/>
+    
+        <!-- Tongue -->
+        <path d="M10.2 14.2
+                 C10.8 15.2 13.2 15.2 13.8 14.2"
+          stroke="#ff9aa2" stroke-width="1.6" stroke-linecap="round"/>
       </svg>`
     },
+    
     wow: {
       empty: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
@@ -87,14 +124,18 @@ const ReactionIcon = ({ type, filled = false, size = 20 }: { type: string; fille
 
   const iconSvg = icons[type]?.[filled ? 'filled' : 'empty'] || icons.like.empty
 
-  const colorClass = filled 
-    ? type === 'like' ? 'text-blue-500' 
-      : type === 'love' ? 'text-red-500'
-      : type === 'haha' ? 'text-yellow-500'
-      : type === 'wow' ? 'text-yellow-400'
-      : type === 'sad' ? 'text-blue-400'
-      : 'text-red-600'
-    : 'text-gray-500'
+  // Base color per reaction type – always colored, even when not filled
+  const baseColorClass =
+    type === 'like' ? 'text-blue-500'
+    : type === 'love' ? 'text-red-500'
+    : type === 'haha' ? 'text-yellow-500'
+    : type === 'wow' ? 'text-yellow-400'
+    : type === 'sad' ? 'text-blue-400'
+    : 'text-red-600'
+
+  const colorClass = filled
+    ? `${baseColorClass} opacity-100`
+    : `${baseColorClass} opacity-70`
 
   return (
     <span 
@@ -119,6 +160,8 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editContent, setEditContent] = useState(post.content)
   const [editImages, setEditImages] = useState(post.images || [])
+  const [imageViewerOpen, setImageViewerOpen] = useState(false)
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
   
   // Debug: log images when post changes
   useEffect(() => {
@@ -131,6 +174,8 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
   const [showComments, setShowComments] = useState(false)
   const [commentText, setCommentText] = useState('')
   const [isCommenting, setIsCommenting] = useState(false)
+  const [replyTexts, setReplyTexts] = useState<Record<string, string>>({})
+  const [replyOpen, setReplyOpen] = useState<Record<string, boolean>>({})
   const [showReactions, setShowReactions] = useState(false)
   const [isReacting, setIsReacting] = useState(false)
   const [showReactionList, setShowReactionList] = useState(false)
@@ -145,13 +190,15 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
     fetcher
   )
 
-  // Fetch reactions
+  // Fetch reactions - with lightweight polling for near-realtime updates
   const { data: reactionsData, mutate: mutateReactions } = useSWR(
     `/api/posts/${post.id}/reactions`,
     fetcher,
     {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
+      // cho cảm giác realtime giữa 2 người
+      refreshInterval: 3000, // 3s
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
     }
   )
 
@@ -269,6 +316,38 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
         setShowComments(true) // Show comments after posting
       } else {
         toast.error(data.error || 'Lỗi khi thêm bình luận')
+      }
+    } catch (error) {
+      toast.error('Có lỗi xảy ra')
+    } finally {
+      setIsCommenting(false)
+    }
+  }
+
+  const handleReplySubmit = async (commentId: string) => {
+    const text = replyTexts[commentId]?.trim()
+    if (!text) return
+
+    setIsCommenting(true)
+    try {
+      const res = await fetch(`/api/posts/${post.id}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, parentCommentId: commentId }),
+      })
+
+      const data = await res.json()
+      if (res.ok) {
+        toast.success('Đã trả lời bình luận')
+        setReplyTexts((prev) => {
+          const next = { ...prev }
+          next[commentId] = ''
+          return next
+        })
+        mutateComments()
+        setShowComments(true)
+      } else {
+        toast.error(data.error || 'Lỗi khi trả lời bình luận')
       }
     } catch (error) {
       toast.error('Có lỗi xảy ra')
@@ -476,13 +555,15 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
       {/* Author Header */}
       <div className="flex items-center gap-3 mb-3">
         {post.author?.image ? (
-          <Image
-            src={post.author.image}
-            alt={post.author.name}
-            width={40}
-            height={40}
-            className="rounded-full"
-          />
+          <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+            <Image
+              src={post.author.image}
+              alt={post.author.name}
+              width={40}
+              height={40}
+              className="w-full h-full object-cover"
+            />
+          </div>
         ) : (
           <div className="w-10 h-10 rounded-full bg-pink-200 flex items-center justify-center text-pink-600 font-semibold">
             {post.author?.name?.charAt(0).toUpperCase() || 'U'}
@@ -627,6 +708,11 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
                 const isLastImage = index === post.images.length - 1
                 const isOnlyImage = post.images.length === 1
                 
+                const handleOpenViewer = () => {
+                  setCurrentImageIndex(index)
+                  setImageViewerOpen(true)
+                }
+
                 return (
                   <div 
                     key={index} 
@@ -638,32 +724,40 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
                         : ''
                     }`}
                   >
-                    {img.url.startsWith('data:') ? (
-                      <img
-                        src={img.url}
-                        alt={`Post image ${index + 1}`}
-                        className={`w-full h-full object-cover ${
-                          isOnlyImage ? 'max-h-96' : 'aspect-square'
-                        }`}
-                        onError={(e) => {
-                          console.error('Image load error:', img.url?.substring(0, 50))
-                        }}
-                      />
-                    ) : (
-                      <Image
-                        src={img.url}
-                        alt={`Post image ${index + 1}`}
-                        width={400}
-                        height={400}
-                        className={`w-full h-full object-cover ${
-                          isOnlyImage ? 'max-h-96' : 'aspect-square'
-                        }`}
-                        unoptimized={img.url.startsWith('http') && !img.url.includes('cloudinary')}
-                        onError={(e) => {
-                          console.error('Image load error:', img.url)
-                        }}
-                      />
-                    )}
+                    <button
+                      type="button"
+                      onClick={handleOpenViewer}
+                      className="block w-full focus:outline-none"
+                    >
+                      {img.url.startsWith('data:') ? (
+                        <img
+                          src={img.url}
+                          alt={`Post image ${index + 1}`}
+                          className={`w-full h-auto object-contain ${
+                            isOnlyImage ? 'max-h-96' : 'max-h-64'
+                          }`}
+                          style={{ maxWidth: '100%' }}
+                          onError={(e) => {
+                            console.error('Image load error:', img.url?.substring(0, 50))
+                          }}
+                        />
+                      ) : (
+                        <Image
+                          src={img.url}
+                          alt={`Post image ${index + 1}`}
+                          width={400}
+                          height={400}
+                          className={`w-full h-auto object-contain ${
+                            isOnlyImage ? 'max-h-96' : 'max-h-64'
+                          }`}
+                          style={{ maxWidth: '100%', height: 'auto' }}
+                          unoptimized={img.url.startsWith('http') && !img.url.includes('cloudinary')}
+                          onError={(e) => {
+                            console.error('Image load error:', img.url)
+                          }}
+                        />
+                      )}
+                    </button>
                   </div>
                 )
               })}
@@ -846,35 +940,120 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
           {/* Comments Section - Always show if there are comments or if user wants to comment */}
           {(showComments || (commentsData?.comments && commentsData.comments.length > 0)) && (
             <div className="mt-3 pt-3 border-t border-gray-200">
-              {/* Comment List - Always show if there are comments */}
-              {commentsData?.comments && commentsData.comments.length > 0 && (
-                <div className="space-y-3 mb-3">
-                  {commentsData.comments.map((comment: any) => (
-                    <div key={comment.id} className="flex gap-2">
-                      {comment.user?.image ? (
-                        <Image
-                          src={comment.user.image}
-                          alt={comment.user.name}
-                          width={32}
-                          height={32}
-                          className="rounded-full flex-shrink-0"
-                        />
-                      ) : (
-                        <div className="w-8 h-8 rounded-full bg-pink-200 flex items-center justify-center text-pink-600 font-semibold text-xs flex-shrink-0">
-                          {comment.user?.name?.charAt(0).toUpperCase() || 'U'}
+              {/* Comment List - root + replies */}
+              {commentsData?.comments && commentsData.comments.length > 0 && (() => {
+                const comments = commentsData.comments
+                const rootComments = comments.filter((c: any) => !c.parentCommentId)
+                const repliesByParent: Record<string, any[]> = {}
+                comments.forEach((c: any) => {
+                  if (c.parentCommentId) {
+                    if (!repliesByParent[c.parentCommentId]) repliesByParent[c.parentCommentId] = []
+                    repliesByParent[c.parentCommentId].push(c)
+                  }
+                })
+
+                return (
+                  <div className="space-y-3 mb-3">
+                    {rootComments.map((comment: any) => (
+                      <div key={comment.id}>
+                        <div className="flex gap-2">
+                          {comment.user?.image ? (
+                            <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
+                              <Image
+                                src={comment.user.image}
+                                alt={comment.user.name}
+                                width={32}
+                                height={32}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-pink-200 flex items-center justify-center text-pink-600 font-semibold text-xs flex-shrink-0">
+                              {comment.user?.name?.charAt(0).toUpperCase() || 'U'}
+                            </div>
+                          )}
+                          <div className="flex-1 bg-gray-50 rounded-lg p-2">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-semibold text-sm text-gray-900">{comment.user?.name}</span>
+                              <span className="text-xs text-gray-500">{formatTime(comment.createdAt)}</span>
+                            </div>
+                            <p className="text-sm text-gray-800 mb-1">{comment.text}</p>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setReplyOpen((prev) => ({
+                                  ...prev,
+                                  [comment.id]: !prev[comment.id],
+                                }))
+                              }}
+                              className="text-xs text-gray-500 hover:text-pink-500 font-medium"
+                            >
+                              Trả lời
+                            </button>
+                          </div>
                         </div>
-                      )}
-                      <div className="flex-1 bg-gray-50 rounded-lg p-2">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-semibold text-sm text-gray-900">{comment.user?.name}</span>
-                          <span className="text-xs text-gray-500">{formatTime(comment.createdAt)}</span>
-                        </div>
-                        <p className="text-sm text-gray-800">{comment.text}</p>
+
+                        {/* Replies */}
+                        {repliesByParent[comment.id] && repliesByParent[comment.id].length > 0 && (
+                          <div className="mt-2 ml-10 space-y-2">
+                            {repliesByParent[comment.id].map((reply: any) => (
+                              <div key={reply.id} className="flex gap-2">
+                                {reply.user?.image ? (
+                                  <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0">
+                                    <Image
+                                      src={reply.user.image}
+                                      alt={reply.user.name}
+                                      width={28}
+                                      height={28}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                ) : (
+                                  <div className="w-7 h-7 rounded-full bg-pink-200 flex items-center justify-center text-pink-600 font-semibold text-[10px] flex-shrink-0">
+                                    {reply.user?.name?.charAt(0).toUpperCase() || 'U'}
+                                  </div>
+                                )}
+                                <div className="flex-1 bg-white rounded-lg p-2 border border-gray-100">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="font-semibold text-xs text-gray-900">{reply.user?.name}</span>
+                                    <span className="text-[10px] text-gray-500">{formatTime(reply.createdAt)}</span>
+                                  </div>
+                                  <p className="text-xs text-gray-800">{reply.text}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Reply input - only show when user clicked Trả lời */}
+                        {replyOpen[comment.id] && (
+                          <div className="mt-2 ml-10">
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                value={replyTexts[comment.id] || ''}
+                                onChange={(e) =>
+                                  setReplyTexts((prev) => ({ ...prev, [comment.id]: e.target.value }))
+                                }
+                                placeholder="Trả lời bình luận..."
+                                className="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-gray-900 placeholder-gray-400 bg-white text-xs"
+                              />
+                              <button
+                                type="button"
+                                disabled={isCommenting || !(replyTexts[comment.id] || '').trim()}
+                                onClick={() => handleReplySubmit(comment.id)}
+                                className="bg-pink-500 text-white px-3 py-1.5 rounded-lg hover:bg-pink-600 transition disabled:opacity-50 text-xs font-semibold"
+                              >
+                                Gửi
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )
+              })()}
 
               {/* Comment Form - Always show */}
               <form onSubmit={handleComment} className="flex gap-2">
@@ -896,6 +1075,74 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
             </div>
           )}
         </>
+      )}
+
+      {/* Image Viewer Modal */}
+      {imageViewerOpen && post.images && post.images.length > 0 && (
+        <div
+          className="fixed inset-0 z-40 bg-black/80 flex items-center justify-center"
+          onClick={() => setImageViewerOpen(false)}
+        >
+          <div
+            className="relative max-w-5xl w-full px-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setImageViewerOpen(false)}
+              className="absolute -top-10 right-0 text-white text-2xl font-bold"
+            >
+              ×
+            </button>
+
+            {post.images.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setCurrentImageIndex(
+                      (currentImageIndex - 1 + post.images.length) % post.images.length
+                    )
+                  }
+                  className="absolute left-0 top-1/2 -translate-y-1/2 text-white text-3xl px-3 py-1"
+                >
+                  ‹
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setCurrentImageIndex((currentImageIndex + 1) % post.images.length)
+                  }
+                  className="absolute right-0 top-1/2 -translate-y-1/2 text-white text-3xl px-3 py-1"
+                >
+                  ›
+                </button>
+              </>
+            )}
+
+            <div className="bg-black rounded-lg overflow-hidden flex items-center justify-center max-h-[90vh]">
+              {post.images[currentImageIndex]?.url?.startsWith('data:') ? (
+                <img
+                  src={post.images[currentImageIndex].url}
+                  alt={`Post image ${currentImageIndex + 1}`}
+                  className="max-h-[90vh] max-w-full object-contain"
+                />
+              ) : (
+                <Image
+                  src={post.images[currentImageIndex].url}
+                  alt={`Post image ${currentImageIndex + 1}`}
+                  width={1000}
+                  height={1000}
+                  className="max-h-[90vh] max-w-full object-contain"
+                  unoptimized={
+                    post.images[currentImageIndex].url.startsWith('http') &&
+                    !post.images[currentImageIndex].url.includes('cloudinary')
+                  }
+                />
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

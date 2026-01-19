@@ -217,29 +217,31 @@ export default function HomePage() {
 
             {/* Image Preview */}
             {postImages.length > 0 && (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
                 {postImages.map((img, index) => (
-                  <div key={index} className="relative group">
+                  <div key={index} className="relative group bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center" style={{ minHeight: '80px', maxHeight: '120px' }}>
                     {img.url.startsWith('data:') ? (
                       <img
                         src={img.url}
                         alt={`Upload ${index + 1}`}
-                        className="w-full h-24 object-cover rounded-lg"
+                        className="max-w-full max-h-full w-auto h-auto object-contain rounded-lg"
+                        style={{ maxHeight: '120px' }}
                       />
                     ) : (
                       <Image
                         src={img.url}
                         alt={`Upload ${index + 1}`}
-                        width={150}
-                        height={150}
-                        className="w-full h-24 object-cover rounded-lg"
+                        width={120}
+                        height={120}
+                        className="max-w-full max-h-full w-auto h-auto object-contain rounded-lg"
+                        style={{ maxHeight: '120px' }}
                         unoptimized={img.url.startsWith('http') && !img.url.includes('cloudinary')}
                       />
                     )}
                     <button
                       type="button"
                       onClick={() => handleRemoveImage(index)}
-                      className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition text-xs font-bold"
+                      className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition text-xs font-bold"
                     >
                       ×
                     </button>
@@ -252,7 +254,7 @@ export default function HomePage() {
             <div className="flex justify-end">
               <button
                 type="submit"
-                disabled={saving || !postContent.trim()}
+                disabled={saving || uploading || !postContent.trim()}
                 className="bg-pink-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-pink-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {saving ? (

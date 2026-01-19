@@ -52,6 +52,7 @@ export async function GET(
         },
         text: c.text,
         createdAt: c.createdAt,
+        parentCommentId: c.parentCommentId ? c.parentCommentId.toString() : null,
       })),
     })
   } catch (error: any) {
@@ -73,7 +74,7 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { text } = await req.json()
+    const { text, parentCommentId } = await req.json()
     if (!text || !text.trim()) {
       return NextResponse.json({ error: 'Text required' }, { status: 400 })
     }
@@ -102,6 +103,7 @@ export async function POST(
       postId: post._id,
       userId: user._id,
       text: text.trim(),
+      parentCommentId: parentCommentId || null,
     })
 
     await comment.populate('userId', 'name email image')
@@ -117,6 +119,7 @@ export async function POST(
         },
         text: comment.text,
         createdAt: comment.createdAt,
+        parentCommentId: comment.parentCommentId ? comment.parentCommentId.toString() : null,
       },
     })
   } catch (error: any) {

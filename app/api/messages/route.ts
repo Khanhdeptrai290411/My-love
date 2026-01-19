@@ -49,6 +49,7 @@ export async function GET(req: NextRequest) {
         },
         text: m.text,
         imageUrl: m.imageUrl,
+        audioUrl: m.audioUrl,
         createdAt: m.createdAt,
       })),
       nextCursor: messages.length === limit ? messages[messages.length - 1].createdAt.toISOString() : null,
@@ -88,8 +89,8 @@ export async function POST(req: NextRequest) {
     const message = await Message.create({
       coupleId: couple._id,
       senderId: user._id,
-      text: text || '',
-      imageUrl: imageUrl || undefined,
+      ...(text && text.trim() ? { text: text.trim() } : {}),
+      ...(imageUrl ? { imageUrl } : {}),
     })
 
     await message.populate('senderId', 'name email image')
@@ -105,6 +106,7 @@ export async function POST(req: NextRequest) {
         },
         text: message.text,
         imageUrl: message.imageUrl,
+        audioUrl: message.audioUrl,
         createdAt: message.createdAt,
       },
     })
