@@ -178,7 +178,9 @@ export default function HomePage() {
               <div className="h-4 bg-gray-200 rounded w-1/2"></div>
             </div>
           ) : (
-            <p className="text-lg text-gray-600 italic">"{quote?.text || 'Hôm nay em có muốn nói gì với anh không?'}"</p>
+            <p className="text-lg text-gray-600 italic">
+              &quot;{quote?.text || 'Hôm nay em có muốn nói gì với anh không?'}&quot;
+            </p>
           )}
         </div>
 
@@ -288,9 +290,9 @@ export default function HomePage() {
         )}
 
         {/* Fix Index Button (temporary) */}
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
           <p className="text-sm text-yellow-800 mb-2">
-            ⚠️ Nếu bạn gặp lỗi "duplicate key error", hãy click nút bên dưới để sửa:
+            ⚠️ Nếu bạn gặp lỗi &quot;duplicate key error&quot;, hãy click nút bên dưới để sửa:
           </p>
           <button
             onClick={async () => {

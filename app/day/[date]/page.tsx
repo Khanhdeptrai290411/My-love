@@ -78,7 +78,9 @@ export default function DayDetailPage({ params }: { params: { date: string } }) 
         {dayData?.quote && (
           <div className="bg-white rounded-lg shadow-md p-6 mb-6">
             <h2 className="text-xl font-semibold mb-2 text-gray-700">Câu nói hôm nay</h2>
-            <p className="text-lg text-gray-600 italic">"{dayData.quote.text}"</p>
+            <p className="text-lg text-gray-600 italic">
+              &quot;{dayData.quote.text}&quot;
+            </p>
           </div>
         )}
 
