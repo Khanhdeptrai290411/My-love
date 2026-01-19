@@ -141,9 +141,23 @@ export default function ReviewPage() {
           ) : (
             <div className="overflow-x-auto">
               <div className="flex gap-1">
-                <div className="flex flex-col gap-1 pt-7">
+                <div className="flex flex-col gap-1" style={{ marginTop: '-12px' }}>
+                  {/* Empty row to match first week row */}
+                  <div className="h-3"></div>
                   {['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'].map((day) => (
-                    <div key={day} className="h-3 text-xs text-gray-500">
+                    <div 
+                      key={day} 
+                      className="h-3 text-xs text-gray-500 flex items-start justify-end pr-1"
+                      style={{ 
+                        lineHeight: '12px',
+                        height: '12px',
+                        minHeight: '12px',
+                        marginTop: '0',
+                        marginBottom: '0',
+                        paddingTop: '0',
+                        transform: 'translateY(-4px)'
+                      }}
+                    >
                       {day}
                     </div>
                   ))}
