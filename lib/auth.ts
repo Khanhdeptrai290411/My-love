@@ -56,6 +56,28 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
+    async jwt({ token, user }) {
+      // IMPORTANT:
+      // With `session.strategy = 'jwt'`, the token is stored in a cookie.
+      // Never store large payloads (e.g. base64 images) in the token, or HTTP requests can fail.
+      if (user) {
+        // Keep token small and stable
+        token.sub = (user as any).id || token.sub
+        token.email = user.email
+        token.name = user.name
+
+        const img = (user as any).image as unknown
+        if (typeof img === 'string') {
+          // Only allow URL-ish images in token; strip base64/data URIs
+          if (img.startsWith('data:')) {
+            delete (token as any).picture
+          } else {
+            ;(token as any).picture = img
+          }
+        }
+      }
+      return token
+    },
     async signIn({ user, account }) {
       try {
         if (account?.provider === 'google') {
@@ -78,12 +100,16 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       try {
-        if (session.user && token.sub) {
+        if (session.user) {
           await connectDB()
           const user = await User.findOne({ email: session.user.email })
           if (user) {
             session.user.id = user._id.toString()
           }
+        }
+        // Prefer token picture for small/fast UI; DB value might be base64 (large)
+        if (session.user && (token as any).picture && typeof (token as any).picture === 'string') {
+          session.user.image = (token as any).picture
         }
         return session
       } catch (error: any) {
