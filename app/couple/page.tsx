@@ -25,11 +25,31 @@ export default function CouplePage() {
     }
   }, [status, router])
 
-  useEffect(() => {
-    if (coupleData?.couple) {
-      router.push('/home')
+  // Không auto-redirect về /home nữa để người dùng có thể quản lý / reset couple tại đây
+
+  const handleLeaveCouple = async () => {
+    if (!confirm('Bạn chắc chắn muốn rời khỏi couple hiện tại? Bạn có thể nhập lại mã mời sau.')) {
+      return
     }
-  }, [coupleData, router])
+
+    setLoading(true)
+    try {
+      const res = await fetch('/api/couple/leave', {
+        method: 'POST',
+      })
+      const data = await res.json()
+      if (res.ok) {
+        toast.success('Bạn đã rời khỏi couple. Giờ có thể tạo hoặc nhập lại mã mời.')
+        mutate()
+      } else {
+        toast.error(data.error || 'Không thể rời couple')
+      }
+    } catch (error) {
+      toast.error('Có lỗi xảy ra')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -95,10 +115,44 @@ export default function CouplePage() {
       <Navbar />
       <div className="max-w-2xl mx-auto px-4 py-12">
         <h1 className="text-3xl font-bold text-center mb-8 text-gray-800">
-          Tạo hoặc tham gia couple
+          {coupleData?.couple ? 'Thông tin couple' : 'Tạo hoặc tham gia couple'}
         </h1>
 
-        {!action ? (
+        {coupleData?.couple ? (
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow-md p-8">
+              <h2 className="text-2xl font-semibold mb-4 text-gray-800">Couple hiện tại</h2>
+              <p className="text-gray-700 mb-2">
+                <span className="font-semibold">Mã mời:</span>{' '}
+                <span className="font-mono text-lg">{coupleData.couple.inviteCode}</span>
+              </p>
+              {coupleData.couple.startDate && (
+                <p className="text-gray-700 mb-2">
+                  <span className="font-semibold">Ngày hẹn hò:</span>{' '}
+                  {coupleData.couple.startDate}
+                </p>
+              )}
+              <div className="mt-4">
+                <p className="font-semibold text-gray-800 mb-2">Thành viên:</p>
+                <ul className="list-disc list-inside text-gray-700">
+                  {coupleData.couple.members?.map((m: any) => (
+                    <li key={m.id}>
+                      {m.name} ({m.email})
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <button
+                type="button"
+                disabled={loading}
+                onClick={handleLeaveCouple}
+                className="mt-6 w-full bg-red-500 text-white py-3 rounded-lg font-semibold hover:bg-red-600 transition disabled:opacity-50"
+              >
+                {loading ? 'Đang xử lý...' : 'Rời khỏi couple / reset để nhập lại mã'}
+              </button>
+            </div>
+          </div>
+        ) : !action ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <button
               onClick={() => setAction('create')}
