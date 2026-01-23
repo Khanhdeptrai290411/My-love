@@ -8,6 +8,8 @@ import { Couple } from '@/models/Couple'
 import { Comment } from '@/models/Comment'
 import mongoose from 'mongoose'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }

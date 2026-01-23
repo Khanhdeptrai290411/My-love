@@ -5,6 +5,8 @@ import connectDB from '@/lib/mongodb'
 import { Couple } from '@/models/Couple'
 import { User } from '@/models/User'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions)

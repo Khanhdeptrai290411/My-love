@@ -8,6 +8,8 @@ import { User } from '@/models/User'
 import { getDaysInYear, getDateKey } from '@/lib/review-utils'
 import mongoose from 'mongoose'
 
+export const dynamic = 'force-dynamic'
+
 // Mood color mapping
 const MOOD_COLORS: Record<string, string> = {
   happy: 'yellow',

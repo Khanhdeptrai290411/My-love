@@ -8,6 +8,8 @@ import { User } from '@/models/User'
 import { getTodayDate } from '@/lib/utils'
 import mongoose from 'mongoose'
 
+export const dynamic = 'force-dynamic'
+
 // Helper to safely convert ObjectId to string
 function objectIdToString(obj: any): string {
   if (!obj) return ''
