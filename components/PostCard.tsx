@@ -537,8 +537,13 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
   }
 
   // Long-press for touch devices to open picker
-  const handleReactionPressStart = () => {
+  const handleReactionPressStart = (e: React.TouchEvent | React.MouseEvent) => {
     if (!isTouchDevice) return
+    
+    // Prevent default behaviors (text selection, context menu)
+    e.preventDefault()
+    e.stopPropagation()
+    
     if (longPressTimeoutRef.current) {
       clearTimeout(longPressTimeoutRef.current)
     }
@@ -548,8 +553,13 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
     }, 300)
   }
 
-  const handleReactionPressEnd = () => {
+  const handleReactionPressEnd = (e: React.TouchEvent | React.MouseEvent) => {
     if (!isTouchDevice) return
+    
+    // Prevent default behaviors
+    e.preventDefault()
+    e.stopPropagation()
+    
     if (longPressTimeoutRef.current) {
       clearTimeout(longPressTimeoutRef.current)
       longPressTimeoutRef.current = null
@@ -906,7 +916,9 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
                 onTouchStart={handleReactionPressStart}
                 onTouchEnd={handleReactionPressEnd}
                 onTouchCancel={handleReactionPressEnd}
+                onContextMenu={(e) => e.preventDefault()} // Prevent context menu on long press
                 disabled={isReacting}
+                style={{ userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'manipulation' }}
                 className={`flex items-center gap-1 text-sm font-semibold transition-all duration-200 disabled:opacity-50 ${
                   reactionsData?.myReaction?.type 
                     ? reactionsData.myReaction.type === 'like' ? 'text-blue-500'
@@ -946,20 +958,28 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
               {showReactions && (
                 <div 
                   className="absolute bottom-full left-0 mb-2 bg-white rounded-full shadow-lg p-2 flex gap-1 z-10"
+                  style={{ userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'manipulation' }}
                   onMouseEnter={handleReactionPickerEnter}
                   onMouseLeave={handleReactionPickerLeave}
                   onTouchStart={(e) => {
                     if (!isTouchDevice) return
                     e.preventDefault()
+                    e.stopPropagation()
                   }}
                   onTouchMove={(e) => {
                     if (!isTouchDevice) return
+                    e.preventDefault() // Prevent scrolling and text selection
+                    e.stopPropagation()
                     const touch = e.touches[0]
+                    if (!touch) return
                     const el = document.elementFromPoint(touch.clientX, touch.clientY) as HTMLElement | null
-                    const btn = el?.closest?.<HTMLElement>('[data-reaction-type]')
+                    if (!el) return
+                    const btn = el.closest('[data-reaction-type]') as HTMLElement | null
                     const type = btn?.getAttribute('data-reaction-type')
                     if (type) {
                       setHoveredReactionType(type)
+                    } else {
+                      setHoveredReactionType(null)
                     }
                   }}
                   onTouchEnd={() => {
@@ -981,11 +1001,26 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
                   {Object.keys(reactionLabels).map((type) => (
                     <button
                       key={type}
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
                         handleReaction(type)
                         setShowReactions(false)
                       }}
+                      onTouchStart={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        setHoveredReactionType(type)
+                      }}
+                      onTouchEnd={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        handleReaction(type)
+                        setShowReactions(false)
+                        setHoveredReactionType(null)
+                      }}
                       data-reaction-type={type}
+                      style={{ userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'manipulation' }}
                       className={`transition-all duration-200 ease-in-out p-1 ${
                         hoveredReactionType === type ? 'scale-125' : 'hover:scale-125 active:scale-110'
                       }`}
