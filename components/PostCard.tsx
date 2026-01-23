@@ -181,12 +181,23 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
   const [showReactionList, setShowReactionList] = useState(false)
   const reactionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const reactionListTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const reactionPickerRef = useRef<HTMLDivElement>(null)
   const [isTouchDevice, setIsTouchDevice] = useState(false)
-  const longPressTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const [isLongPressing, setIsLongPressing] = useState(false)
-  const [hoveredReactionType, setHoveredReactionType] = useState<string | null>(null)
 
   const isMyPost = post.author?.email === session?.user?.email
+
+  // Detect touch device
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const hasTouch =
+        'ontouchstart' in window ||
+        // @ts-ignore
+        (navigator && (navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0))
+      if (hasTouch) {
+        setIsTouchDevice(true)
+      }
+    }
+  }, [])
 
   // Always fetch comments to check if there are any
   const { data: commentsData, mutate: mutateComments } = useSWR(
@@ -519,9 +530,19 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
     angry: 'Phẫn nộ',
   }
 
-  // Handle reaction picker with delay (desktop / non-touch)
+  // Toggle reaction picker on click (mobile only)
+  const handleReactionButtonClick = (e: React.MouseEvent | React.TouchEvent) => {
+    // Only toggle on mobile, desktop uses hover
+    if (isTouchDevice) {
+      e.preventDefault()
+      e.stopPropagation()
+      setShowReactions(!showReactions)
+    }
+  }
+
+  // Handle reaction picker hover (desktop only)
   const handleReactionPickerEnter = () => {
-    if (isTouchDevice) return
+    if (isTouchDevice) return // Skip on mobile
     if (reactionTimeoutRef.current) {
       clearTimeout(reactionTimeoutRef.current)
       reactionTimeoutRef.current = null
@@ -530,46 +551,34 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
   }
 
   const handleReactionPickerLeave = () => {
-    if (isTouchDevice) return
+    if (isTouchDevice) return // Skip on mobile
     reactionTimeoutRef.current = setTimeout(() => {
       setShowReactions(false)
     }, 300) // 300ms delay before hiding
   }
 
-  // Long-press for touch devices to open picker
-  const handleReactionPressStart = (e: React.TouchEvent | React.MouseEvent) => {
-    if (!isTouchDevice) return
-    
-    // Prevent default behaviors (text selection, context menu)
-    e.preventDefault()
-    e.stopPropagation()
-    
-    if (longPressTimeoutRef.current) {
-      clearTimeout(longPressTimeoutRef.current)
+  // Close reaction picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      if (
+        reactionPickerRef.current &&
+        !reactionPickerRef.current.contains(event.target as Node) &&
+        !(event.target as HTMLElement)?.closest('[data-reaction-button]')
+      ) {
+        setShowReactions(false)
+      }
     }
-    longPressTimeoutRef.current = setTimeout(() => {
-      setIsLongPressing(true)
-      setShowReactions(true)
-    }, 300)
-  }
 
-  const handleReactionPressEnd = (e: React.TouchEvent | React.MouseEvent) => {
-    if (!isTouchDevice) return
-    
-    // Prevent default behaviors
-    e.preventDefault()
-    e.stopPropagation()
-    
-    if (longPressTimeoutRef.current) {
-      clearTimeout(longPressTimeoutRef.current)
-      longPressTimeoutRef.current = null
+    if (showReactions) {
+      document.addEventListener('mousedown', handleClickOutside)
+      document.addEventListener('touchstart', handleClickOutside)
     }
-    // Nếu không đủ lâu để coi là long press -> coi như click "Thích"
-    if (!isLongPressing) {
-      handleReaction('like')
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('touchstart', handleClickOutside)
     }
-    setIsLongPressing(false)
-  }
+  }, [showReactions])
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -579,9 +588,6 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
       }
       if (reactionListTimeoutRef.current) {
         clearTimeout(reactionListTimeoutRef.current)
-      }
-      if (longPressTimeoutRef.current) {
-        clearTimeout(longPressTimeoutRef.current)
       }
     }
   }, [])
@@ -908,15 +914,17 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
           <div className="flex items-center gap-4 pt-3 border-t border-gray-200">
             <div className="relative flex-1">
               <button
+                data-reaction-button
                 onMouseEnter={handleReactionPickerEnter}
                 onMouseLeave={handleReactionPickerLeave}
-                onClick={isTouchDevice ? undefined : () => handleReaction('like')}
-                onMouseDown={handleReactionPressStart}
-                onMouseUp={handleReactionPressEnd}
-                onTouchStart={handleReactionPressStart}
-                onTouchEnd={handleReactionPressEnd}
-                onTouchCancel={handleReactionPressEnd}
-                onContextMenu={(e) => e.preventDefault()} // Prevent context menu on long press
+                onClick={handleReactionButtonClick}
+                onContextMenu={(e) => e.preventDefault()}
+                onTouchStart={(e) => {
+                  // Prevent text selection on mobile
+                  if (isTouchDevice) {
+                    e.preventDefault()
+                  }
+                }}
                 disabled={isReacting}
                 style={{ userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'manipulation' }}
                 className={`flex items-center gap-1 text-sm font-semibold transition-all duration-200 disabled:opacity-50 ${
@@ -957,6 +965,7 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
               {/* Reaction Picker */}
               {showReactions && (
                 <div 
+                  ref={reactionPickerRef}
                   className="reaction-picker-container absolute bottom-full left-0 mb-2 bg-white rounded-full shadow-lg p-3 flex gap-2 z-50"
                   style={{ 
                     userSelect: 'none', 
@@ -968,54 +977,6 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
                   }}
                   onMouseEnter={handleReactionPickerEnter}
                   onMouseLeave={handleReactionPickerLeave}
-                  onTouchStart={(e) => {
-                    if (!isTouchDevice) return
-                    e.preventDefault()
-                    e.stopPropagation()
-                  }}
-                  onTouchMove={(e) => {
-                    if (!isTouchDevice) return
-                    e.preventDefault() // Prevent scrolling and text selection
-                    e.stopPropagation()
-                    const touch = e.touches[0]
-                    if (!touch) return
-                    
-                    // Try to find the reaction button at touch point
-                    const el = document.elementFromPoint(touch.clientX, touch.clientY) as HTMLElement | null
-                    if (!el) {
-                      setHoveredReactionType(null)
-                      return
-                    }
-                    
-                    // Check if we're touching a reaction button or its child
-                    const btn = el.closest('[data-reaction-type]') as HTMLElement | null
-                    const type = btn?.getAttribute('data-reaction-type')
-                    
-                    if (type) {
-                      setHoveredReactionType(type)
-                    } else {
-                      // If not directly on a button, check if we're within the picker container
-                      const pickerContainer = el.closest('.reaction-picker-container')
-                      if (!pickerContainer) {
-                        setHoveredReactionType(null)
-                      }
-                    }
-                  }}
-                  onTouchEnd={() => {
-                    if (!isTouchDevice) return
-                    if (hoveredReactionType) {
-                      handleReaction(hoveredReactionType)
-                    }
-                    setShowReactions(false)
-                    setHoveredReactionType(null)
-                    setIsLongPressing(false)
-                  }}
-                  onTouchCancel={() => {
-                    if (!isTouchDevice) return
-                    setShowReactions(false)
-                    setHoveredReactionType(null)
-                    setIsLongPressing(false)
-                  }}
                 >
                   {Object.keys(reactionLabels).map((type) => (
                     <button
@@ -1025,18 +986,6 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
                         e.stopPropagation()
                         handleReaction(type)
                         setShowReactions(false)
-                      }}
-                      onTouchStart={(e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                        setHoveredReactionType(type)
-                      }}
-                      onTouchEnd={(e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                        handleReaction(type)
-                        setShowReactions(false)
-                        setHoveredReactionType(null)
                       }}
                       data-reaction-type={type}
                       style={{ 
@@ -1050,9 +999,7 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
                         justifyContent: 'center',
                         padding: '8px'
                       }}
-                      className={`transition-all duration-200 ease-in-out ${
-                        hoveredReactionType === type ? 'scale-125' : 'hover:scale-125 active:scale-110'
-                      }`}
+                      className="transition-all duration-200 ease-in-out hover:scale-125 active:scale-110"
                       title={reactionLabels[type]}
                     >
                       <ReactionIcon 
