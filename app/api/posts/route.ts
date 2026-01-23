@@ -8,6 +8,21 @@ import { User } from '@/models/User'
 import { getTodayDate } from '@/lib/utils'
 import mongoose from 'mongoose'
 
+// Helper to safely convert ObjectId to string
+function objectIdToString(obj: any): string {
+  if (!obj) return ''
+  if (typeof obj === 'string') return obj
+  if (obj._id) return String(obj._id)
+  if (obj.toString && typeof obj.toString === 'function') {
+    try {
+      return String(obj.toString())
+    } catch {
+      return String(obj)
+    }
+  }
+  return String(obj)
+}
+
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -93,45 +108,11 @@ export async function GET(req: NextRequest) {
     const seenIds = new Set<string>()
     
     for (const p of posts) {
-      try {
-        if (!p.authorId) continue
-        
-        let idStr = ''
-        // Try different ways to get string ID
-        if (typeof p.authorId === 'string') {
-          idStr = p.authorId
-        } else if (p.authorId && typeof p.authorId === 'object') {
-          // Try _id property first
-          if (p.authorId._id) {
-            idStr = String(p.authorId._id)
-          } else if (p.authorId.toString) {
-            try {
-              idStr = String(p.authorId.toString())
-            } catch {
-              // If toString fails, try JSON.stringify
-              try {
-                idStr = JSON.stringify(p.authorId)
-              } catch {
-                continue
-              }
-            }
-          } else {
-            // Last resort: try to stringify the whole object
-            try {
-              idStr = String(p.authorId)
-            } catch {
-              continue
-            }
-          }
-        }
-        
-        if (idStr && !seenIds.has(idStr)) {
-          authorIds.push(idStr)
-          seenIds.add(idStr)
-        }
-      } catch (err) {
-        console.error('Error extracting authorId from post:', err)
-        continue
+      if (!p.authorId) continue
+      const idStr = objectIdToString(p.authorId)
+      if (idStr && !seenIds.has(idStr)) {
+        authorIds.push(idStr)
+        seenIds.add(idStr)
       }
     }
     
@@ -187,25 +168,7 @@ export async function GET(req: NextRequest) {
         const postImages = Array.isArray(p.images) ? p.images : []
         
         // Get author info from map - handle both ObjectId and string
-        let authorId = ''
-        try {
-          if (p.authorId) {
-            if (typeof p.authorId === 'string') {
-              authorId = p.authorId
-            } else if (p.authorId && typeof p.authorId === 'object') {
-              if (p.authorId._id) {
-                authorId = String(p.authorId._id)
-              } else if (p.authorId.toString) {
-                authorId = String(p.authorId.toString())
-              } else {
-                authorId = String(p.authorId)
-              }
-            }
-          }
-        } catch (idError) {
-          console.error('Error extracting authorId:', idError)
-          authorId = ''
-        }
+        const authorId = objectIdToString(p.authorId)
         const author = authorsMap[authorId] || {
           name: 'Người dùng',
           email: '',
