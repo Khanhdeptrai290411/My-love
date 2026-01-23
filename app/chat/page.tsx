@@ -147,7 +147,7 @@ export default function ChatPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Navbar />
-      <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full px-4 py-4">
+      <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full px-4 py-4 pb-28">
         <h1 className="text-3xl font-bold mb-4 text-gray-800">Chat</h1>
 
         <div className="flex-1 bg-white rounded-lg shadow-md p-4 mb-4 overflow-y-auto">
@@ -201,90 +201,96 @@ export default function ChatPage() {
           )}
         </div>
 
-        {/* Image Preview */}
-        {pendingImages.length > 0 && (
-          <div className="mb-2 p-2 bg-gray-50 rounded-lg border border-gray-200">
-            <div className="flex gap-2 flex-wrap">
-              {pendingImages.map((img) => (
-                <div key={img.id} className="relative group">
-                  <img
-                    src={img.preview}
-                    alt="Preview"
-                    className="w-20 h-20 object-cover rounded border border-gray-300"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveImage(img.id)}
-                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold opacity-0 group-hover:opacity-100 transition"
-                  >
-                    ×
-                  </button>
-                  {uploadingImages[img.id] && (
-                    <div className="absolute inset-0 bg-black bg-opacity-50 rounded flex items-center justify-center">
-                      <div className="text-white text-xs">Đang tải...</div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <form
-          onSubmit={handleSend}
-          className="flex gap-2 items-center"
-          onPaste={(e) => {
-            const items = Array.from(e.clipboardData.items)
-            items.forEach((item) => {
-              if (item.type.startsWith('image/')) {
-                e.preventDefault()
-                const file = item.getAsFile()
-                if (file) {
-                  handleAddImage(file)
-                }
-              }
-            })
-          }}
-        >
-          <input
-            type="text"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder="Nhập tin nhắn... (có thể dán ảnh Ctrl+V)"
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-gray-900 placeholder-gray-400 bg-white"
-          />
-
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            multiple
-            className="hidden"
-            onChange={(e) => {
-              const files = Array.from(e.target.files || [])
-              files.forEach(file => handleAddImage(file))
-              e.target.value = ''
-            }}
-          />
-
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm"
-            title="Chọn ảnh"
-          >
-            📷
-          </button>
-
-          <button
-            type="submit"
-            disabled={sending || (!message.trim() && pendingImages.length === 0)}
-            className="bg-pink-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-pink-600 transition disabled:opacity-50"
-          >
-            {sending ? 'Đang gửi...' : 'Gửi'}
-          </button>
-        </form>
       </div>
+
+      {/* Form cố định dưới màn hình để luôn thấy trên mobile */}
+      <form
+        onSubmit={handleSend}
+        className="fixed bottom-0 left-0 right-0 bg-gray-50 border-t border-gray-200 px-3 sm:px-4 py-2"
+        onPaste={(e) => {
+          const items = Array.from(e.clipboardData.items)
+          items.forEach((item) => {
+            if (item.type.startsWith('image/')) {
+              e.preventDefault()
+              const file = item.getAsFile()
+              if (file) {
+                handleAddImage(file)
+              }
+            }
+          })
+        }}
+      >
+        <div className="max-w-4xl mx-auto w-full">
+          {/* Image Preview */}
+          {pendingImages.length > 0 && (
+            <div className="mb-2 p-2 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="flex gap-2 flex-wrap">
+                {pendingImages.map((img) => (
+                  <div key={img.id} className="relative group">
+                    <img
+                      src={img.preview}
+                      alt="Preview"
+                      className="w-16 h-16 object-cover rounded border border-gray-300"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveImage(img.id)}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold opacity-0 group-hover:opacity-100 transition"
+                    >
+                      ×
+                    </button>
+                    {uploadingImages[img.id] && (
+                      <div className="absolute inset-0 bg-black bg-opacity-50 rounded flex items-center justify-center">
+                        <div className="text-white text-xs">Đang tải...</div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="flex gap-2 items-center">
+            <input
+              type="text"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Nhập tin nhắn... (có thể dán ảnh Ctrl+V)"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-gray-900 placeholder-gray-400 bg-white text-sm"
+            />
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                const files = Array.from(e.target.files || [])
+                files.forEach(file => handleAddImage(file))
+                e.target.value = ''
+              }}
+            />
+
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm"
+              title="Chọn ảnh"
+            >
+              📷
+            </button>
+
+            <button
+              type="submit"
+              disabled={sending || (!message.trim() && pendingImages.length === 0)}
+              className="bg-pink-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-pink-600 transition disabled:opacity-50 text-sm"
+            >
+              {sending ? 'Đang gửi...' : 'Gửi'}
+            </button>
+          </div>
+        </div>
+      </form>
     </div>
   )
 }

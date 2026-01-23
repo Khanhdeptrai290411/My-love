@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import useSWR from 'swr'
 import Navbar from '@/components/Navbar'
 import Link from 'next/link'
@@ -21,6 +21,8 @@ export default function HomePage() {
   const [postImages, setPostImages] = useState<{ url: string; publicId: string }[]>([])
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const cameraInputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -39,10 +41,7 @@ export default function HomePage() {
 
   // Removed todayPost check - allow multiple posts per day
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
+  const uploadImageFile = async (file: File) => {
     setUploading(true)
     try {
       const formData = new FormData()
@@ -55,7 +54,7 @@ export default function HomePage() {
 
       const data = await res.json()
       if (res.ok) {
-        setPostImages([...postImages, { url: data.url, publicId: data.publicId }])
+        setPostImages((prev) => [...prev, { url: data.url, publicId: data.publicId }])
         toast.success('Upload ảnh thành công!')
       } else {
         toast.error(data.error || 'Upload thất bại')
@@ -64,6 +63,37 @@ export default function HomePage() {
       toast.error('Có lỗi xảy ra khi upload')
     } finally {
       setUploading(false)
+    }
+  }
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    if (!files.length) return
+
+    for (const file of files) {
+      // Upload tuần tự để trạng thái uploading rõ ràng
+      // eslint-disable-next-line no-await-in-loop
+      await uploadImageFile(file)
+    }
+
+    // Reset input để chọn lại cùng file nếu muốn
+    e.target.value = ''
+  }
+
+  const handlePasteImages = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = Array.from(e.clipboardData.items).filter((item) =>
+      item.type.startsWith('image/')
+    )
+    if (!items.length) return
+
+    e.preventDefault()
+
+    for (const item of items) {
+      const file = item.getAsFile()
+      if (file) {
+        // eslint-disable-next-line no-await-in-loop
+        await uploadImageFile(file)
+      }
     }
   }
 
@@ -192,6 +222,7 @@ export default function HomePage() {
             <textarea
               value={postContent}
               onChange={(e) => setPostContent(e.target.value)}
+              onPaste={handlePasteImages}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent min-h-[120px] text-gray-900 placeholder-gray-400 bg-white resize-none"
               placeholder="Viết về ngày của bạn..."
             />
@@ -200,8 +231,10 @@ export default function HomePage() {
             <div className="flex items-center gap-3">
               <label className="cursor-pointer">
                 <input
+                  ref={fileInputRef}
                   type="file"
                   accept="image/*"
+                  multiple
                   onChange={handleImageUpload}
                   disabled={uploading}
                   className="hidden"
@@ -212,6 +245,24 @@ export default function HomePage() {
                   <span className="text-sm text-gray-700 font-medium">Album</span>
                 </div>
               </label>
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleImageUpload}
+                disabled={uploading}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => cameraInputRef.current?.click()}
+                disabled={uploading}
+                className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition text-sm text-gray-700 font-medium disabled:opacity-50"
+              >
+                <span className="text-2xl">📸</span>
+                <span>Chụp ảnh</span>
+              </button>
               {uploading && (
                 <span className="text-sm text-gray-500">Đang upload...</span>
               )}
