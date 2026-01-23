@@ -41,74 +41,103 @@ export async function GET(req: NextRequest) {
     }
 
     // Build query based on filter
-    const partnerId = couple.memberIds.find((id: any) => id.toString() !== user._id.toString())
-    let authorFilter: any = {}
+    let partnerId: any = null
+    try {
+      if (Array.isArray(couple.memberIds)) {
+        partnerId = couple.memberIds.find((id: any) => {
+          try {
+            return id?.toString() !== user._id?.toString()
+          } catch {
+            return false
+          }
+        })
+      }
+    } catch (err) {
+      console.error('Error finding partner ID:', err)
+    }
     
-    console.log('=== POST FILTER DEBUG ===')
-    console.log('Filter:', filter)
-    console.log('User ID:', user._id.toString())
-    console.log('All member IDs:', couple.memberIds.map((id: any) => id.toString()))
-    console.log('Partner ID:', partnerId?.toString())
-    console.log('Start date:', startDate)
+    let authorFilter: any = {}
     
     if (filter === 'me') {
       authorFilter.authorId = user._id
     } else if (filter === 'partner') {
       if (!partnerId) {
-        console.log('❌ No partner found - returning empty array')
         return NextResponse.json({ posts: [] })
       }
       authorFilter.authorId = partnerId
-      console.log('✅ Using partner filter with ID:', partnerId.toString())
     }
     // If filter === 'both', don't add authorFilter (show all)
-    
-    console.log('Author filter:', JSON.stringify(authorFilter, null, 2))
 
     const query: any = {
       coupleId: couple._id,
       date: { $gte: startDate },
       ...authorFilter,
     }
-    
-    console.log('Final query:', JSON.stringify({
-      coupleId: query.coupleId.toString(),
-      date: query.date,
-      authorId: query.authorId?.toString(),
-    }, null, 2))
 
     const posts = await Post.find(query)
       .populate('authorId', 'name email image')
       .sort({ date: -1, createdAt: -1 })
-    
-    console.log(`✅ Found ${posts.length} posts for filter: ${filter}`)
-    if (posts.length > 0) {
-      console.log('Post authors:', posts.map((p: any) => ({
-        id: p.authorId.toString(),
-        name: (p.authorId as any).name,
-      })))
-    }
-    console.log('=== END DEBUG ===')
+      .lean()
 
     return NextResponse.json({
-      posts: posts.map(p => {
-        // Ensure images array is properly formatted
-        const postImages = Array.isArray(p.images) ? p.images : []
-        const author: any = p.authorId || {}
+      posts: posts.map((p: any) => {
+        try {
+          // Ensure images array is properly formatted
+          const postImages = Array.isArray(p.images) ? p.images : []
+          
+          // Handle populated authorId - could be ObjectId or populated object
+          let author: any = {}
+          if (p.authorId) {
+            if (typeof p.authorId === 'object' && p.authorId._id) {
+              // Populated object
+              author = {
+                _id: p.authorId._id,
+                name: p.authorId.name || 'Người dùng',
+                email: p.authorId.email || '',
+                image: p.authorId.image || null,
+              }
+            } else if (typeof p.authorId === 'object' && p.authorId.toString) {
+              // Just ObjectId
+              author = {
+                _id: p.authorId,
+                name: 'Người dùng',
+                email: '',
+                image: null,
+              }
+            }
+          }
 
-        return {
-          id: p._id?.toString?.() || '',
-          authorId: author._id?.toString?.() || '',
-          author: {
-            name: author.name || 'Người dùng',
-            email: author.email || '',
-            image: author.image || null,
-          },
-          date: p.date,
-          content: p.content,
-          images: postImages,
-          starred: p.starred,
-          createdAt: p.createdAt,
+          return {
+            id: p._id?.toString() || '',
+            authorId: author._id?.toString() || '',
+            author: {
+              name: author.name || 'Người dùng',
+              email: author.email || '',
+              image: author.image || null,
+            },
+            date: p.date || '',
+            content: p.content || '',
+            images: postImages,
+            starred: p.starred || false,
+            createdAt: p.createdAt || new Date().toISOString(),
+          }
+        } catch (mapError: any) {
+          console.error('Error mapping post:', mapError, p)
+          // Return safe fallback
+          return {
+            id: p._id?.toString() || '',
+            authorId: '',
+            author: {
+              name: 'Người dùng',
+              email: '',
+              image: null,
+            },
+            date: p.date || '',
+            content: p.content || '',
+            images: [],
+            starred: false,
+            createdAt: p.createdAt || new Date().toISOString(),
+          }
         }
       }),
     })
