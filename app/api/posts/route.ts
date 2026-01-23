@@ -6,6 +6,7 @@ import { Post } from '@/models/Post'
 import { Couple } from '@/models/Couple'
 import { User } from '@/models/User'
 import { getTodayDate } from '@/lib/utils'
+import mongoose from 'mongoose'
 
 export async function GET(req: NextRequest) {
   try {
@@ -77,8 +78,8 @@ export async function GET(req: NextRequest) {
     let posts: any[] = []
     try {
       posts = await Post.find(query)
-        .populate('authorId', 'name email image')
         .sort({ date: -1, createdAt: -1 })
+        .lean()
     } catch (queryError: any) {
       console.error('Error querying posts:', queryError?.message || queryError)
       return NextResponse.json(
@@ -87,33 +88,55 @@ export async function GET(req: NextRequest) {
       )
     }
 
+    // Get all unique author IDs
+    const authorIds = Array.from(new Set(posts.map((p: any) => p.authorId?.toString()).filter(Boolean)))
+    
+    // Fetch all authors at once
+    let authorsMap: Record<string, any> = {}
+    if (authorIds.length > 0) {
+      try {
+        // Convert string IDs to ObjectIds
+        const authorObjectIds = authorIds
+          .map((id: string) => {
+            try {
+              return new mongoose.Types.ObjectId(id)
+            } catch {
+              return null
+            }
+          })
+          .filter((id): id is mongoose.Types.ObjectId => id !== null)
+        
+        if (authorObjectIds.length > 0) {
+          const authors = await User.find({ _id: { $in: authorObjectIds } })
+            .select('name email image')
+            .lean()
+          authors.forEach((a: any) => {
+            const id = a._id?.toString() || ''
+            authorsMap[id] = {
+              name: a.name || 'Người dùng',
+              email: a.email || '',
+              image: a.image || null,
+            }
+          })
+        }
+      } catch (authorError: any) {
+        console.error('Error fetching authors:', authorError?.message || authorError)
+        // Continue with empty authorsMap - will use fallback
+      }
+    }
+
     // Convert to plain objects safely
     const postsData = posts.map((p: any) => {
       try {
         // Ensure images array is properly formatted
         const postImages = Array.isArray(p.images) ? p.images : []
         
-        // Handle populated authorId - could be ObjectId or populated object
-        let authorId = ''
-        let author: any = {
+        // Get author info from map
+        const authorId = p.authorId?.toString() || ''
+        const author = authorsMap[authorId] || {
           name: 'Người dùng',
           email: '',
           image: null,
-        }
-        
-        if (p.authorId) {
-          if (p.authorId._id) {
-            // Populated object (Mongoose document)
-            authorId = p.authorId._id.toString()
-            author = {
-              name: p.authorId.name || 'Người dùng',
-              email: p.authorId.email || '',
-              image: p.authorId.image || null,
-            }
-          } else if (p.authorId.toString) {
-            // Just ObjectId
-            authorId = p.authorId.toString()
-          }
         }
 
         // Safely serialize dates
