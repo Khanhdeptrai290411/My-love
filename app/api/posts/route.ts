@@ -94,13 +94,15 @@ export async function GET(req: NextRequest) {
       posts: posts.map(p => {
         // Ensure images array is properly formatted
         const postImages = Array.isArray(p.images) ? p.images : []
+        const author: any = p.authorId || {}
+
         return {
-          id: p._id.toString(),
-          authorId: p.authorId.toString(),
+          id: p._id?.toString?.() || '',
+          authorId: author._id?.toString?.() || '',
           author: {
-            name: (p.authorId as any).name,
-            email: (p.authorId as any).email,
-            image: (p.authorId as any).image,
+            name: author.name || 'Người dùng',
+            email: author.email || '',
+            image: author.image || null,
           },
           date: p.date,
           content: p.content,
