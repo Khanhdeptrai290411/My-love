@@ -77,70 +77,82 @@ export async function GET(req: NextRequest) {
     const posts = await Post.find(query)
       .populate('authorId', 'name email image')
       .sort({ date: -1, createdAt: -1 })
-      .lean()
 
-    return NextResponse.json({
-      posts: posts.map((p: any) => {
-        try {
-          // Ensure images array is properly formatted
-          const postImages = Array.isArray(p.images) ? p.images : []
-          
-          // Handle populated authorId - could be ObjectId or populated object
-          let author: any = {}
-          if (p.authorId) {
-            if (typeof p.authorId === 'object' && p.authorId._id) {
-              // Populated object
-              author = {
-                _id: p.authorId._id,
-                name: p.authorId.name || 'Người dùng',
-                email: p.authorId.email || '',
-                image: p.authorId.image || null,
-              }
-            } else if (typeof p.authorId === 'object' && p.authorId.toString) {
-              // Just ObjectId
-              author = {
-                _id: p.authorId,
-                name: 'Người dùng',
-                email: '',
-                image: null,
-              }
+    // Convert to plain objects safely
+    const postsData = posts.map((p: any) => {
+      try {
+        // Ensure images array is properly formatted
+        const postImages = Array.isArray(p.images) ? p.images : []
+        
+        // Handle populated authorId - could be ObjectId or populated object
+        let authorId = ''
+        let author: any = {
+          name: 'Người dùng',
+          email: '',
+          image: null,
+        }
+        
+        if (p.authorId) {
+          if (p.authorId._id) {
+            // Populated object (Mongoose document)
+            authorId = p.authorId._id.toString()
+            author = {
+              name: p.authorId.name || 'Người dùng',
+              email: p.authorId.email || '',
+              image: p.authorId.image || null,
             }
-          }
-
-          return {
-            id: p._id?.toString() || '',
-            authorId: author._id?.toString() || '',
-            author: {
-              name: author.name || 'Người dùng',
-              email: author.email || '',
-              image: author.image || null,
-            },
-            date: p.date || '',
-            content: p.content || '',
-            images: postImages,
-            starred: p.starred || false,
-            createdAt: p.createdAt || new Date().toISOString(),
-          }
-        } catch (mapError: any) {
-          console.error('Error mapping post:', mapError, p)
-          // Return safe fallback
-          return {
-            id: p._id?.toString() || '',
-            authorId: '',
-            author: {
-              name: 'Người dùng',
-              email: '',
-              image: null,
-            },
-            date: p.date || '',
-            content: p.content || '',
-            images: [],
-            starred: false,
-            createdAt: p.createdAt || new Date().toISOString(),
+          } else if (p.authorId.toString) {
+            // Just ObjectId
+            authorId = p.authorId.toString()
           }
         }
-      }),
+
+        // Safely serialize dates
+        let createdAt = new Date().toISOString()
+        if (p.createdAt) {
+          if (p.createdAt instanceof Date) {
+            createdAt = p.createdAt.toISOString()
+          } else if (typeof p.createdAt === 'string') {
+            createdAt = p.createdAt
+          } else {
+            createdAt = new Date(p.createdAt).toISOString()
+          }
+        }
+
+        return {
+          id: p._id?.toString() || '',
+          authorId: authorId,
+          author: author,
+          date: p.date || '',
+          content: p.content || '',
+          images: postImages,
+          starred: p.starred || false,
+          createdAt: createdAt,
+        }
+      } catch (mapError: any) {
+        console.error('Error mapping post:', mapError?.message || mapError, {
+          postId: p._id?.toString(),
+          hasAuthorId: !!p.authorId,
+        })
+        // Return safe fallback
+        return {
+          id: p._id?.toString() || '',
+          authorId: '',
+          author: {
+            name: 'Người dùng',
+            email: '',
+            image: null,
+          },
+          date: p.date || '',
+          content: p.content || '',
+          images: [],
+          starred: false,
+          createdAt: new Date().toISOString(),
+        }
+      }
     })
+
+    return NextResponse.json({ posts: postsData })
   } catch (error: any) {
     console.error('Get posts error:', error)
     return NextResponse.json(
