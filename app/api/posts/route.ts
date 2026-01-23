@@ -94,15 +94,47 @@ export async function GET(req: NextRequest) {
 
     let posts: any[] = []
     try {
+      // Check MongoDB connection before querying
+      if (mongoose.connection.readyState !== 1) {
+        console.log('MongoDB not ready, reconnecting...')
+        await connectDB()
+      }
+      
       posts = await Post.find(query)
         .sort({ date: -1, createdAt: -1 })
         .lean()
     } catch (queryError: any) {
       console.error('Error querying posts:', queryError?.message || queryError)
-      return NextResponse.json(
-        { error: 'Failed to query posts', details: queryError?.message },
-        { status: 500 }
-      )
+      
+      // If connection error, try to reset and retry once
+      if (queryError?.message?.includes('timeout') || queryError?.message?.includes('connection')) {
+        console.log('Connection error detected, resetting connection...')
+        try {
+          await mongoose.disconnect().catch(() => {})
+          // Clear cache to force reconnect
+          if (global.mongoose) {
+            global.mongoose.conn = null
+            global.mongoose.promise = null
+          }
+          await connectDB()
+          
+          // Retry query once
+          posts = await Post.find(query)
+            .sort({ date: -1, createdAt: -1 })
+            .lean()
+        } catch (retryError: any) {
+          console.error('Retry also failed:', retryError?.message || retryError)
+          return NextResponse.json(
+            { error: 'Database connection failed. Please try again later.' },
+            { status: 503 }
+          )
+        }
+      } else {
+        return NextResponse.json(
+          { error: 'Failed to query posts', details: queryError?.message },
+          { status: 500 }
+        )
+      }
     }
 
     // Get all unique author IDs - handle both ObjectId and string
