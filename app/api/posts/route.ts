@@ -74,9 +74,18 @@ export async function GET(req: NextRequest) {
       ...authorFilter,
     }
 
-    const posts = await Post.find(query)
-      .populate('authorId', 'name email image')
-      .sort({ date: -1, createdAt: -1 })
+    let posts: any[] = []
+    try {
+      posts = await Post.find(query)
+        .populate('authorId', 'name email image')
+        .sort({ date: -1, createdAt: -1 })
+    } catch (queryError: any) {
+      console.error('Error querying posts:', queryError?.message || queryError)
+      return NextResponse.json(
+        { error: 'Failed to query posts', details: queryError?.message },
+        { status: 500 }
+      )
+    }
 
     // Convert to plain objects safely
     const postsData = posts.map((p: any) => {
@@ -119,44 +128,90 @@ export async function GET(req: NextRequest) {
           }
         }
 
-        return {
-          id: p._id?.toString() || '',
-          authorId: authorId,
-          author: author,
-          date: p.date || '',
-          content: p.content || '',
-          images: postImages,
-          starred: p.starred || false,
-          createdAt: createdAt,
+        // Ensure all values are serializable
+        const result = {
+          id: String(p._id || ''),
+          authorId: String(authorId || ''),
+          author: {
+            name: String(author.name || 'Người dùng'),
+            email: String(author.email || ''),
+            image: author.image ? String(author.image) : null,
+          },
+          date: String(p.date || ''),
+          content: String(p.content || ''),
+          images: postImages.map((img: any) => {
+            if (typeof img === 'string') return { url: img }
+            if (typeof img === 'object' && img !== null) {
+              return {
+                url: String(img.url || ''),
+                ...(img.publicId && { publicId: String(img.publicId) }),
+              }
+            }
+            return { url: '' }
+          }),
+          starred: Boolean(p.starred || false),
+          createdAt: String(createdAt),
         }
+        return result
       } catch (mapError: any) {
         console.error('Error mapping post:', mapError?.message || mapError, {
           postId: p._id?.toString(),
           hasAuthorId: !!p.authorId,
+          errorType: typeof mapError,
         })
-        // Return safe fallback
-        return {
-          id: p._id?.toString() || '',
-          authorId: '',
-          author: {
-            name: 'Người dùng',
-            email: '',
-            image: null,
-          },
-          date: p.date || '',
-          content: p.content || '',
-          images: [],
-          starred: false,
-          createdAt: new Date().toISOString(),
+        // Return safe fallback - ensure all values are serializable
+        try {
+          return {
+            id: String(p._id || ''),
+            authorId: '',
+            author: {
+              name: 'Người dùng',
+              email: '',
+              image: null,
+            },
+            date: String(p.date || ''),
+            content: String(p.content || ''),
+            images: [],
+            starred: false,
+            createdAt: new Date().toISOString(),
+          }
+        } catch (fallbackError: any) {
+          console.error('Error in fallback:', fallbackError)
+          // Ultimate fallback
+          return {
+            id: '',
+            authorId: '',
+            author: { name: 'Người dùng', email: '', image: null },
+            date: '',
+            content: '',
+            images: [],
+            starred: false,
+            createdAt: new Date().toISOString(),
+          }
         }
       }
     })
 
-    return NextResponse.json({ posts: postsData })
+    try {
+      return NextResponse.json({ posts: postsData })
+    } catch (jsonError: any) {
+      console.error('Error serializing JSON:', jsonError?.message || jsonError)
+      // Try to return at least empty array
+      return NextResponse.json({ posts: [] })
+    }
   } catch (error: any) {
     console.error('Get posts error:', error)
+    console.error('Error stack:', error?.stack)
+    console.error('Error details:', {
+      message: error?.message,
+      name: error?.name,
+      code: error?.code,
+    })
     return NextResponse.json(
-      { error: error.message || 'Failed to get posts' },
+      { 
+        error: error?.message || 'Failed to get posts',
+        details: process.env.NODE_ENV === 'development' ? error?.stack : undefined
+      },
       { status: 500 }
     )
   }
