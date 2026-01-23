@@ -903,7 +903,6 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
                 onClick={isTouchDevice ? undefined : () => handleReaction('like')}
                 onMouseDown={handleReactionPressStart}
                 onMouseUp={handleReactionPressEnd}
-                onMouseLeave={handleReactionPressEnd}
                 onTouchStart={handleReactionPressStart}
                 onTouchEnd={handleReactionPressEnd}
                 onTouchCancel={handleReactionPressEnd}
