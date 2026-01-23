@@ -88,8 +88,21 @@ export async function GET(req: NextRequest) {
       )
     }
 
-    // Get all unique author IDs
-    const authorIds = Array.from(new Set(posts.map((p: any) => p.authorId?.toString()).filter(Boolean)))
+    // Get all unique author IDs - handle both ObjectId and string
+    const authorIds = Array.from(new Set(
+      posts
+        .map((p: any) => {
+          if (!p.authorId) return null
+          // Handle ObjectId from lean()
+          if (p.authorId._id) return p.authorId._id.toString()
+          if (p.authorId.toString && typeof p.authorId.toString === 'function') {
+            return p.authorId.toString()
+          }
+          if (typeof p.authorId === 'string') return p.authorId
+          return null
+        })
+        .filter((id): id is string => id !== null)
+    ))
     
     // Fetch all authors at once
     let authorsMap: Record<string, any> = {}
@@ -111,11 +124,20 @@ export async function GET(req: NextRequest) {
             .select('name email image')
             .lean()
           authors.forEach((a: any) => {
-            const id = a._id?.toString() || ''
-            authorsMap[id] = {
-              name: a.name || 'Người dùng',
-              email: a.email || '',
-              image: a.image || null,
+            let id = ''
+            if (a._id) {
+              if (a._id.toString && typeof a._id.toString === 'function') {
+                id = a._id.toString()
+              } else if (typeof a._id === 'string') {
+                id = a._id
+              }
+            }
+            if (id) {
+              authorsMap[id] = {
+                name: a.name || 'Người dùng',
+                email: a.email || '',
+                image: a.image || null,
+              }
             }
           })
         }
@@ -131,8 +153,17 @@ export async function GET(req: NextRequest) {
         // Ensure images array is properly formatted
         const postImages = Array.isArray(p.images) ? p.images : []
         
-        // Get author info from map
-        const authorId = p.authorId?.toString() || ''
+        // Get author info from map - handle both ObjectId and string
+        let authorId = ''
+        if (p.authorId) {
+          if (p.authorId._id) {
+            authorId = p.authorId._id.toString()
+          } else if (p.authorId.toString && typeof p.authorId.toString === 'function') {
+            authorId = p.authorId.toString()
+          } else if (typeof p.authorId === 'string') {
+            authorId = p.authorId
+          }
+        }
         const author = authorsMap[authorId] || {
           name: 'Người dùng',
           email: '',

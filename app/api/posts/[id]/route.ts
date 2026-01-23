@@ -6,6 +6,7 @@ import { Post } from '@/models/Post'
 import { User } from '@/models/User'
 import { Couple } from '@/models/Couple'
 import { Comment } from '@/models/Comment'
+import mongoose from 'mongoose'
 
 export async function GET(
   req: NextRequest,
@@ -31,26 +32,80 @@ export async function GET(
     const post = await Post.findOne({
       _id: params.id,
       coupleId: couple._id,
-    }).populate('authorId', 'name email image')
+    }).lean() as any
 
     if (!post) {
       return NextResponse.json({ error: 'Post not found' }, { status: 404 })
     }
 
+    // Fetch author separately
+    let authorId = ''
+    let author: any = {
+      name: 'Người dùng',
+      email: '',
+      image: null,
+    }
+
+    if (post.authorId) {
+      // Handle ObjectId from lean()
+      if (post.authorId._id) {
+        authorId = post.authorId._id.toString()
+      } else if (post.authorId.toString && typeof post.authorId.toString === 'function') {
+        authorId = post.authorId.toString()
+      } else if (typeof post.authorId === 'string') {
+        authorId = post.authorId
+      }
+
+      if (authorId) {
+        try {
+          const authorDoc = await User.findById(authorId)
+            .select('name email image')
+            .lean() as any
+          if (authorDoc) {
+            author = {
+              name: authorDoc.name || 'Người dùng',
+              email: authorDoc.email || '',
+              image: authorDoc.image || null,
+            }
+          }
+        } catch (authorError: any) {
+          console.error('Error fetching author:', authorError?.message || authorError)
+          // Use fallback author
+        }
+      }
+    }
+
+    // Safely serialize dates
+    let createdAt = new Date().toISOString()
+    if (post.createdAt) {
+      if (post.createdAt instanceof Date) {
+        createdAt = post.createdAt.toISOString()
+      } else if (typeof post.createdAt === 'string') {
+        createdAt = post.createdAt
+      } else {
+        createdAt = new Date(post.createdAt).toISOString()
+      }
+    }
+
     return NextResponse.json({
       post: {
-        id: post._id.toString(),
-        authorId: post.authorId.toString(),
-        author: {
-          name: (post.authorId as any).name,
-          email: (post.authorId as any).email,
-          image: (post.authorId as any).image,
-        },
-        date: post.date,
-        content: post.content,
-        images: post.images,
-        starred: post.starred,
-        createdAt: post.createdAt,
+        id: String(post._id || ''),
+        authorId: String(authorId || ''),
+        author: author,
+        date: String(post.date || ''),
+        content: String(post.content || ''),
+        images: Array.isArray(post.images) ? post.images.map((img: any) => {
+          if (typeof img === 'string') return { url: img }
+          if (typeof img === 'object' && img !== null) {
+            return {
+              url: String(img.url || ''),
+              ...(img.publicId && { publicId: String(img.publicId) }),
+            }
+          }
+          return { url: '' }
+        }) : [],
+        starred: Boolean(post.starred || false),
+        createdAt: String(createdAt),
       },
     })
   } catch (error: any) {
