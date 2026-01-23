@@ -957,8 +957,15 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
               {/* Reaction Picker */}
               {showReactions && (
                 <div 
-                  className="absolute bottom-full left-0 mb-2 bg-white rounded-full shadow-lg p-2 flex gap-1 z-10"
-                  style={{ userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'manipulation' }}
+                  className="reaction-picker-container absolute bottom-full left-0 mb-2 bg-white rounded-full shadow-lg p-3 flex gap-2 z-50"
+                  style={{ 
+                    userSelect: 'none', 
+                    WebkitUserSelect: 'none', 
+                    touchAction: 'manipulation',
+                    minWidth: 'fit-content',
+                    whiteSpace: 'nowrap',
+                    pointerEvents: 'auto'
+                  }}
                   onMouseEnter={handleReactionPickerEnter}
                   onMouseLeave={handleReactionPickerLeave}
                   onTouchStart={(e) => {
@@ -972,14 +979,26 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
                     e.stopPropagation()
                     const touch = e.touches[0]
                     if (!touch) return
+                    
+                    // Try to find the reaction button at touch point
                     const el = document.elementFromPoint(touch.clientX, touch.clientY) as HTMLElement | null
-                    if (!el) return
+                    if (!el) {
+                      setHoveredReactionType(null)
+                      return
+                    }
+                    
+                    // Check if we're touching a reaction button or its child
                     const btn = el.closest('[data-reaction-type]') as HTMLElement | null
                     const type = btn?.getAttribute('data-reaction-type')
+                    
                     if (type) {
                       setHoveredReactionType(type)
                     } else {
-                      setHoveredReactionType(null)
+                      // If not directly on a button, check if we're within the picker container
+                      const pickerContainer = el.closest('.reaction-picker-container')
+                      if (!pickerContainer) {
+                        setHoveredReactionType(null)
+                      }
                     }
                   }}
                   onTouchEnd={() => {
@@ -1020,8 +1039,18 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
                         setHoveredReactionType(null)
                       }}
                       data-reaction-type={type}
-                      style={{ userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'manipulation' }}
-                      className={`transition-all duration-200 ease-in-out p-1 ${
+                      style={{ 
+                        userSelect: 'none', 
+                        WebkitUserSelect: 'none', 
+                        touchAction: 'manipulation',
+                        minWidth: '44px',
+                        minHeight: '44px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '8px'
+                      }}
+                      className={`transition-all duration-200 ease-in-out ${
                         hoveredReactionType === type ? 'scale-125' : 'hover:scale-125 active:scale-110'
                       }`}
                       title={reactionLabels[type]}
@@ -1039,6 +1068,17 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
             
             <button
               onClick={() => setShowComments(!showComments)}
+              onContextMenu={(e) => e.preventDefault()}
+              onTouchStart={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+              }}
+              onTouchEnd={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                setShowComments(!showComments)
+              }}
+              style={{ userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'manipulation' }}
               className="flex items-center gap-1 text-sm font-semibold text-gray-500 hover:text-gray-700"
             >
               💬 Bình luận
@@ -1046,7 +1086,18 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
             
             <button
               onClick={handleStar}
+              onContextMenu={(e) => e.preventDefault()}
+              onTouchStart={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+              }}
+              onTouchEnd={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                handleStar()
+              }}
               disabled={isStarring}
+              style={{ userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'manipulation' }}
               className={`flex items-center gap-1 text-sm font-semibold transition disabled:opacity-50 ${
                 post.starred ? 'text-yellow-500' : 'text-gray-500 hover:text-yellow-500'
               }`}
