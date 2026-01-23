@@ -89,20 +89,51 @@ export async function GET(req: NextRequest) {
     }
 
     // Get all unique author IDs - handle both ObjectId and string
-    const authorIds = Array.from(new Set(
-      posts
-        .map((p: any) => {
-          if (!p.authorId) return null
-          // Handle ObjectId from lean()
-          if (p.authorId._id) return p.authorId._id.toString()
-          if (p.authorId.toString && typeof p.authorId.toString === 'function') {
-            return p.authorId.toString()
+    const authorIds: string[] = []
+    const seenIds = new Set<string>()
+    
+    for (const p of posts) {
+      try {
+        if (!p.authorId) continue
+        
+        let idStr = ''
+        // Try different ways to get string ID
+        if (typeof p.authorId === 'string') {
+          idStr = p.authorId
+        } else if (p.authorId && typeof p.authorId === 'object') {
+          // Try _id property first
+          if (p.authorId._id) {
+            idStr = String(p.authorId._id)
+          } else if (p.authorId.toString) {
+            try {
+              idStr = String(p.authorId.toString())
+            } catch {
+              // If toString fails, try JSON.stringify
+              try {
+                idStr = JSON.stringify(p.authorId)
+              } catch {
+                continue
+              }
+            }
+          } else {
+            // Last resort: try to stringify the whole object
+            try {
+              idStr = String(p.authorId)
+            } catch {
+              continue
+            }
           }
-          if (typeof p.authorId === 'string') return p.authorId
-          return null
-        })
-        .filter((id): id is string => id !== null)
-    ))
+        }
+        
+        if (idStr && !seenIds.has(idStr)) {
+          authorIds.push(idStr)
+          seenIds.add(idStr)
+        }
+      } catch (err) {
+        console.error('Error extracting authorId from post:', err)
+        continue
+      }
+    }
     
     // Fetch all authors at once
     let authorsMap: Record<string, any> = {}
@@ -148,21 +179,32 @@ export async function GET(req: NextRequest) {
     }
 
     // Convert to plain objects safely
-    const postsData = posts.map((p: any) => {
+    let postsData: any[] = []
+    try {
+      postsData = posts.map((p: any) => {
       try {
         // Ensure images array is properly formatted
         const postImages = Array.isArray(p.images) ? p.images : []
         
         // Get author info from map - handle both ObjectId and string
         let authorId = ''
-        if (p.authorId) {
-          if (p.authorId._id) {
-            authorId = p.authorId._id.toString()
-          } else if (p.authorId.toString && typeof p.authorId.toString === 'function') {
-            authorId = p.authorId.toString()
-          } else if (typeof p.authorId === 'string') {
-            authorId = p.authorId
+        try {
+          if (p.authorId) {
+            if (typeof p.authorId === 'string') {
+              authorId = p.authorId
+            } else if (p.authorId && typeof p.authorId === 'object') {
+              if (p.authorId._id) {
+                authorId = String(p.authorId._id)
+              } else if (p.authorId.toString) {
+                authorId = String(p.authorId.toString())
+              } else {
+                authorId = String(p.authorId)
+              }
+            }
           }
+        } catch (idError) {
+          console.error('Error extracting authorId:', idError)
+          authorId = ''
         }
         const author = authorsMap[authorId] || {
           name: 'Người dùng',
@@ -244,7 +286,13 @@ export async function GET(req: NextRequest) {
           }
         }
       }
-    })
+      })
+    } catch (mapError: any) {
+      console.error('Error mapping posts:', mapError?.message || mapError)
+      console.error('Stack:', mapError?.stack)
+      // Return empty array if mapping fails
+      postsData = []
+    }
 
     try {
       return NextResponse.json({ posts: postsData })
