@@ -160,7 +160,14 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
   const { data: session } = useSession()
   const [isEditing, setIsEditing] = useState(false)
   const [editContent, setEditContent] = useState(post.content)
-  const [editImages, setEditImages] = useState(post.images || [])
+  // Normalize images to array
+  const normalizeImages = (images: any): any[] => {
+    if (!images) return []
+    if (Array.isArray(images)) return images
+    if (typeof images === 'string') return images ? [{ url: images }] : []
+    return [images]
+  }
+  const [editImages, setEditImages] = useState(normalizeImages(post.images))
   const [imageViewerOpen, setImageViewerOpen] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [isSaving, setIsSaving] = useState(false)
@@ -234,7 +241,14 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
 
   useEffect(() => {
     setEditContent(post.content)
-    setEditImages(post.images || [])
+    // Normalize images to array
+    const normalizeImages = (images: any): any[] => {
+      if (!images) return []
+      if (Array.isArray(images)) return images
+      if (typeof images === 'string') return images ? [{ url: images }] : []
+      return [images]
+    }
+    setEditImages(normalizeImages(post.images))
   }, [post])
 
   const handleStar = async () => {
@@ -1048,8 +1062,8 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
           {(showComments || (commentsData?.comments && commentsData.comments.length > 0)) && (
             <div className="mt-3 pt-3 border-t border-gray-200">
               {/* Comment List - root + replies */}
-              {commentsData?.comments && commentsData.comments.length > 0 && (() => {
-                const comments = commentsData.comments
+              {commentsData?.comments && Array.isArray(commentsData.comments) && commentsData.comments.length > 0 && (() => {
+                const comments = Array.isArray(commentsData.comments) ? commentsData.comments : []
                 const rootComments = comments.filter((c: any) => !c.parentCommentId)
                 const repliesByParent: Record<string, any[]> = {}
                 comments.forEach((c: any) => {
@@ -1185,7 +1199,7 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
       )}
 
       {/* Image Viewer Modal */}
-      {imageViewerOpen && post.images && post.images.length > 0 && (
+      {imageViewerOpen && post.images && Array.isArray(post.images) && post.images.length > 0 && (
         <div
           className="fixed inset-0 z-40 bg-black/80 flex items-center justify-center"
           onClick={() => setImageViewerOpen(false)}

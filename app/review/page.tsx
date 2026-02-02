@@ -8,7 +8,15 @@ import Navbar from '@/components/Navbar'
 import Link from 'next/link'
 import { getDaysInYear, getDateKey, getDayOfWeek } from '@/lib/review-utils'
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json())
+const fetcher = async (url: string) => {
+  const res = await fetch(url)
+  const data = await res.json()
+  if (!res.ok) {
+    throw new Error(data.error || `Request failed (${res.status})`)
+  }
+  // Ensure response is always an array
+  return Array.isArray(data) ? data : []
+}
 
 // Mood color mapping
 const MOOD_COLORS: Record<string, { base: string; light: string; medium: string; dark: string }> = {
@@ -55,11 +63,14 @@ export default function ReviewPage() {
     }
   }, [status, router])
 
-  const { data: heatmapData, isLoading } = useSWR(
+  const { data: heatmapData, isLoading, error: heatmapError } = useSWR(
     `/api/review?year=${year}&view=${view}`,
     fetcher,
     { revalidateOnFocus: true }
   )
+
+  // Normalize heatmapData to always be an array
+  const normalizedHeatmapData = Array.isArray(heatmapData) ? heatmapData : []
 
   const days = getDaysInYear(year)
   const weeks: Date[][] = []
@@ -79,7 +90,7 @@ export default function ReviewPage() {
 
   const getCellData = (date: Date) => {
     const dateKey = getDateKey(date)
-    const data = heatmapData?.find((d: any) => d.date === dateKey)
+    const data = normalizedHeatmapData.find((d: any) => d.date === dateKey)
     if (!data) {
       return view === 'couple' 
         ? { me: null, partner: null }
@@ -98,7 +109,7 @@ export default function ReviewPage() {
 
   // Get unique moods for legend
   const uniqueMoods = new Set<string>()
-  heatmapData?.forEach((d: any) => {
+  normalizedHeatmapData.forEach((d: any) => {
     if (view === 'couple') {
       if (d.me?.mood) uniqueMoods.add(d.me.mood)
       if (d.partner?.mood) uniqueMoods.add(d.partner.mood)
@@ -139,6 +150,10 @@ export default function ReviewPage() {
 
           {isLoading ? (
             <div className="text-center py-12 text-gray-800">Đang tải...</div>
+          ) : heatmapError ? (
+            <div className="text-center py-12 text-red-600">
+              Lỗi khi tải dữ liệu: {heatmapError.message || 'Unknown error'}
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <div className="flex gap-1">
@@ -175,8 +190,8 @@ export default function ReviewPage() {
                           const myColor = cellData.me ? getMoodColor(cellData.me.mood, cellData.me.intensity) : 'bg-gray-100'
                           const partnerColor = cellData.partner ? getMoodColor(cellData.partner.mood, cellData.partner.intensity) : 'bg-gray-100'
                           
-                          const myLabel = cellData.me ? `${MOOD_LABELS[cellData.me.mood]} (${cellData.me.intensity})` : 'Chưa check-in'
-                          const partnerLabel = cellData.partner ? `${MOOD_LABELS[cellData.partner.mood]} (${cellData.partner.intensity})` : 'Chưa check-in'
+                          const myLabel = cellData.me && cellData.me.mood ? `${MOOD_LABELS[cellData.me.mood] || cellData.me.mood} (${cellData.me.intensity})` : 'Chưa check-in'
+                          const partnerLabel = cellData.partner && cellData.partner.mood ? `${MOOD_LABELS[cellData.partner.mood] || cellData.partner.mood} (${cellData.partner.intensity})` : 'Chưa check-in'
                           
                           return (
                             <Link
@@ -199,7 +214,7 @@ export default function ReviewPage() {
                             key={dateKey}
                             href={`/day/${dateKey}`}
                             className={`w-3 h-3 rounded ${getMoodColor(cellData.mood, cellData.intensity)} hover:ring-2 hover:ring-pink-500 transition`}
-                            title={`${dateKey}${cellData.mood ? ` - ${MOOD_LABELS[cellData.mood]} (${cellData.intensity})` : ''}`}
+                            title={`${dateKey}${cellData.mood ? ` - ${MOOD_LABELS[cellData.mood] || cellData.mood} (${cellData.intensity})` : ''}`}
                           />
                         )
                       })}
@@ -218,16 +233,20 @@ export default function ReviewPage() {
           <div className="mt-6 space-y-2">
             <div className="text-sm text-gray-800 font-semibold mb-2">Chú thích:</div>
             <div className="flex flex-wrap gap-4">
-              {Array.from(uniqueMoods).map((mood) => (
-                <div key={mood} className="flex items-center gap-2">
-                  <div className="flex gap-1">
-                    <div className={`w-3 h-3 rounded ${MOOD_COLORS[mood].light}`}></div>
-                    <div className={`w-3 h-3 rounded ${MOOD_COLORS[mood].medium}`}></div>
-                    <div className={`w-3 h-3 rounded ${MOOD_COLORS[mood].dark}`}></div>
+              {Array.from(uniqueMoods).map((mood) => {
+                const colors = MOOD_COLORS[mood]
+                if (!colors) return null // Skip invalid moods
+                return (
+                  <div key={mood} className="flex items-center gap-2">
+                    <div className="flex gap-1">
+                      <div className={`w-3 h-3 rounded ${colors.light}`}></div>
+                      <div className={`w-3 h-3 rounded ${colors.medium}`}></div>
+                      <div className={`w-3 h-3 rounded ${colors.dark}`}></div>
+                    </div>
+                    <span className="text-xs text-gray-600">{MOOD_LABELS[mood] || mood}</span>
                   </div>
-                  <span className="text-xs text-gray-600">{MOOD_LABELS[mood]}</span>
-                </div>
-              ))}
+                )
+              })}
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded bg-gray-100"></div>
                 <span className="text-xs text-gray-600">Chưa check-in</span>

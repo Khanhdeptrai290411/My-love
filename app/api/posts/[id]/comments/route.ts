@@ -43,8 +43,11 @@ export async function GET(
       .populate('userId', 'name email image')
       .sort({ createdAt: 1 })
 
+    // Ensure comments is always an array
+    const commentsArray = Array.isArray(comments) ? comments : []
+
     return NextResponse.json({
-      comments: comments.map(c => ({
+      comments: commentsArray.map(c => ({
         id: c._id.toString(),
         userId: c.userId.toString(),
         user: {
