@@ -39,7 +39,11 @@ export async function POST(req: NextRequest) {
     } catch (error: any) {
       console.error('Cloudinary upload failed:', error)
       return NextResponse.json(
-        { error: 'Upload Cloudinary thất bại. Kiểm tra cấu hình CLOUDINARY_* và thử lại.' },
+        {
+          error:
+            'Upload Cloudinary thất bại. Kiểm tra cấu hình CLOUDINARY_* và thử lại. Chi tiết: ' +
+            (error?.message || 'Unknown error'),
+        },
         { status: 502 }
       )
     }
