@@ -17,12 +17,18 @@ export async function POST(req: NextRequest) {
     }
 
     // Bắt buộc Cloudinary cho mọi môi trường (không dùng base64 nữa)
-    const hasCloudinary =
-      process.env.CLOUDINARY_CLOUD_NAME &&
-      process.env.CLOUDINARY_API_KEY &&
-      process.env.CLOUDINARY_API_SECRET
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME
+    const apiKey = process.env.CLOUDINARY_API_KEY
+    const apiSecret = process.env.CLOUDINARY_API_SECRET
 
-    if (!hasCloudinary) {
+    if (!cloudName || !apiKey || !apiSecret) {
+      console.error('Missing Cloudinary env:', {
+        hasCloudName: !!cloudName,
+        hasApiKey: !!apiKey,
+        hasApiSecret: !!apiSecret,
+        cloudNameLength: cloudName?.length,
+        apiKeyLength: apiKey?.length,
+      })
       return NextResponse.json(
         { error: 'Cloudinary chưa được cấu hình (CLOUDINARY_CLOUD_NAME/API_KEY/API_SECRET).' },
         { status: 500 }
@@ -37,12 +43,18 @@ export async function POST(req: NextRequest) {
         publicId: result.publicId,
       })
     } catch (error: any) {
-      console.error('Cloudinary upload failed:', error)
+      console.error('Cloudinary upload failed:', {
+        message: error?.message,
+        http_code: error?.http_code,
+        name: error?.name,
+        cloudName: cloudName,
+        apiKeyPrefix: apiKey?.substring(0, 3) + '...',
+      })
       return NextResponse.json(
         {
           error:
             'Upload Cloudinary thất bại. Kiểm tra cấu hình CLOUDINARY_* và thử lại. Chi tiết: ' +
-            (error?.message || 'Unknown error'),
+            (error?.message || error?.http_code || 'Unknown error'),
         },
         { status: 502 }
       )
