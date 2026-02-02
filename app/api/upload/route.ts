@@ -39,63 +39,29 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      // Thử gọi trực tiếp REST API để xem raw response (debug)
-      const arrayBuffer = await file.arrayBuffer()
-      const buffer = Buffer.from(arrayBuffer)
-      const base64 = buffer.toString('base64')
-      const dataUrl = `data:${file.type || 'image/jpeg'};base64,${base64}`
-
-      const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`
-      const formData = new FormData()
-      formData.append('file', dataUrl)
-      formData.append('folder', 'my-love-app')
-
-      const uploadRes = await fetch(uploadUrl, {
-        method: 'POST',
-        body: formData,
+      // Dùng SDK Cloudinary (signed upload, không cần preset)
+      const { uploadImage } = await import('@/lib/cloudinary')
+      const result = await uploadImage(file)
+      return NextResponse.json({
+        url: result.url,
+        publicId: result.publicId,
       })
-
-      const responseText = await uploadRes.text()
-      console.error('Cloudinary REST API raw response:', {
-        status: uploadRes.status,
-        statusText: uploadRes.statusText,
-        contentType: uploadRes.headers.get('content-type'),
-        sample: responseText.slice(0, 500),
-      })
-
-      if (!uploadRes.ok) {
-        return NextResponse.json(
-          {
-            error: `Cloudinary upload failed: ${uploadRes.status} ${uploadRes.statusText}`,
-            detail: responseText.slice(0, 500),
-          },
-          { status: uploadRes.status }
-        )
-      }
-
-      try {
-        const uploadData = JSON.parse(responseText)
-        return NextResponse.json({
-          url: uploadData.secure_url,
-          publicId: uploadData.public_id,
-        })
-      } catch {
-        return NextResponse.json(
-          {
-            error: 'Cloudinary returned non-JSON response',
-            detail: responseText.slice(0, 500),
-          },
-          { status: 502 }
-        )
-      }
     } catch (err: any) {
-      console.error('Upload error:', err)
+      console.error('Cloudinary SDK error raw:', err)
+      console.error('Cloudinary SDK error detail:', {
+        name: err?.name,
+        message: err?.message,
+        http_code: err?.http_code,
+        statusCode: err?.statusCode,
+        error: err?.error,
+      })
       return NextResponse.json(
         {
           error: err?.message ?? 'Upload Cloudinary thất bại',
-          detail: err?.stack?.slice(0, 300) ?? null,
+          detail: err?.error ?? null,
+          http_code: err?.http_code ?? err?.statusCode ?? null,
         },
-        { status: 500 }
+        { status: err?.http_code ?? err?.statusCode ?? 502 }
       )
     }
   } catch (error: any) {
