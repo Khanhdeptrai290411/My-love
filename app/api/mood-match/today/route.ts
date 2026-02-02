@@ -90,9 +90,12 @@ export async function GET() {
       })
     }
 
-    const partner = partnerId
+    const partnerDoc = partnerId
       ? await User.findById(partnerId).select('name').lean()
       : null
+    const partnerName = partnerDoc && typeof partnerDoc === 'object' && 'name' in partnerDoc
+      ? String(partnerDoc.name)
+      : 'người ấy'
     if (myMood.mood === partnerMood.mood) {
       return NextResponse.json({
         status: 'MATCH',
@@ -111,7 +114,7 @@ export async function GET() {
     } else {
       return NextResponse.json({
         status: 'MISMATCH',
-        message: `Hôm nay mood khác nhau: bạn ${getMoodEmoji(myMood.mood)} ${myMood.mood} — ${partner?.name || 'người ấy'} ${getMoodEmoji(partnerMood.mood)} ${partnerMood.mood}`,
+        message: `Hôm nay mood khác nhau: bạn ${getMoodEmoji(myMood.mood)} ${myMood.mood} — ${partnerName} ${getMoodEmoji(partnerMood.mood)} ${partnerMood.mood}`,
         moods: {
           me: {
             mood: myMood.mood,
