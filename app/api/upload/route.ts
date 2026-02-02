@@ -16,44 +16,33 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
     }
 
-    // Check file size (max 5MB for base64)
-    const maxSize = 5 * 1024 * 1024 // 5MB
-    if (file.size > maxSize) {
-      return NextResponse.json({ error: 'File quá lớn (tối đa 5MB)' }, { status: 400 })
-    }
-
-    // Check if Cloudinary is configured
-    const hasCloudinary = 
-      process.env.CLOUDINARY_CLOUD_NAME && 
-      process.env.CLOUDINARY_API_KEY && 
+    // Bắt buộc Cloudinary cho mọi môi trường (không dùng base64 nữa)
+    const hasCloudinary =
+      process.env.CLOUDINARY_CLOUD_NAME &&
+      process.env.CLOUDINARY_API_KEY &&
       process.env.CLOUDINARY_API_SECRET
 
-    if (hasCloudinary) {
-      try {
-        // Try Cloudinary upload
-        const { uploadImage } = await import('@/lib/cloudinary')
-        const result = await uploadImage(file)
-        return NextResponse.json({
-          url: result.url,
-          publicId: result.publicId,
-        })
-      } catch (error: any) {
-        console.error('Cloudinary upload failed, falling back to base64:', error)
-        // Fall through to base64
-      }
+    if (!hasCloudinary) {
+      return NextResponse.json(
+        { error: 'Cloudinary chưa được cấu hình (CLOUDINARY_CLOUD_NAME/API_KEY/API_SECRET).' },
+        { status: 500 }
+      )
     }
 
-    // Fallback to base64
-    const arrayBuffer = await file.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
-    const base64 = buffer.toString('base64')
-    const mimeType = file.type || 'image/jpeg'
-    const dataUrl = `data:${mimeType};base64,${base64}`
-
-    return NextResponse.json({
-      url: dataUrl,
-      publicId: undefined, // No publicId for base64
-    })
+    try {
+      const { uploadImage } = await import('@/lib/cloudinary')
+      const result = await uploadImage(file)
+      return NextResponse.json({
+        url: result.url,
+        publicId: result.publicId,
+      })
+    } catch (error: any) {
+      console.error('Cloudinary upload failed:', error)
+      return NextResponse.json(
+        { error: 'Upload Cloudinary thất bại. Kiểm tra cấu hình CLOUDINARY_* và thử lại.' },
+        { status: 502 }
+      )
+    }
   } catch (error: any) {
     console.error('Upload error:', error)
     return NextResponse.json(

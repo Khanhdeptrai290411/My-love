@@ -12,7 +12,22 @@ import { getTodayDate } from '@/lib/utils'
 import PostCard from '@/components/PostCard'
 import LoveCounter from '@/components/LoveCounter'
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json())
+const fetcher = async (url: string) => {
+  const res = await fetch(url)
+  let data: any = null
+  try {
+    data = await res.json()
+  } catch {
+    data = null
+  }
+  if (!res.ok) {
+    const message =
+      (data && typeof data.error === 'string' && data.error) ||
+      `Request failed (${res.status})`
+    throw new Error(message)
+  }
+  return data
+}
 
 export default function HomePage() {
   const { data: session, status } = useSession()
@@ -43,7 +58,7 @@ export default function HomePage() {
 
   const [postsSkip, setPostsSkip] = useState(0)
   const [accumulatedPosts, setAccumulatedPosts] = useState<any[]>([])
-  const { data: postsResponse, isLoading: postsLoading, mutate: mutatePosts } = useSWR(
+  const { data: postsResponse, isLoading: postsLoading, error: postsError, mutate: mutatePosts } = useSWR(
     `/api/posts?range=3month&filter=${postFilter}&limit=30&skip=${postsSkip}`,
     fetcher
   )
@@ -90,6 +105,12 @@ export default function HomePage() {
       setUploading(false)
     }
   }
+
+  // Posts to display: ưu tiên accumulated (phân trang), nếu chưa có thì dùng cache từ SWR
+  const displayPosts = accumulatedPosts.length > 0
+    ? accumulatedPosts
+    : postsResponse?.posts || []
+  const hasAnyPosts = displayPosts.length > 0
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
@@ -427,7 +448,7 @@ export default function HomePage() {
               </button>
             </div>
           </div>
-          {postsLoading && accumulatedPosts.length === 0 ? (
+          {postsLoading && !hasAnyPosts ? (
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="animate-pulse bg-white rounded-lg shadow-md p-4">
@@ -436,10 +457,31 @@ export default function HomePage() {
                 </div>
               ))}
             </div>
-          ) : accumulatedPosts.length > 0 ? (
+          ) : postsError && !hasAnyPosts ? (
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <p className="text-red-600 font-semibold mb-2">Không tải được bài đăng</p>
+              <p className="text-gray-600 text-sm mb-4">
+                {(postsError as any)?.message || 'Có lỗi xảy ra khi gọi /api/posts'}
+              </p>
+              <button
+                type="button"
+                onClick={() => mutatePosts()}
+                className="px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition text-sm font-semibold"
+              >
+                Thử lại
+              </button>
+            </div>
+          ) : hasAnyPosts ? (
             <div className="space-y-4">
-              {accumulatedPosts.map((post: any) => (
-                <PostCard key={post.id} post={post} onUpdate={() => { setPostsSkip(0); mutatePosts() }} />
+              {displayPosts.map((post: any) => (
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  onUpdate={() => {
+                    setPostsSkip(0)
+                    mutatePosts()
+                  }}
+                />
               ))}
               {postsResponse?.hasMore && (
                 <div className="flex justify-center py-4">
