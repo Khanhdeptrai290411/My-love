@@ -46,8 +46,8 @@ export async function POST(req: NextRequest) {
         publicId: result.publicId,
       })
     } catch (err: any) {
-      console.error('Cloudinary error raw:', err)
-      console.error('Cloudinary error detail:', {
+      console.error('Cloudinary SDK error raw:', err)
+      console.error('Cloudinary SDK error detail:', {
         name: err?.name,
         message: err?.message,
         http_code: err?.http_code,
