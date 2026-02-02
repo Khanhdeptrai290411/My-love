@@ -8,12 +8,13 @@ export const metadata: Metadata = {
   description: 'App dành cho cặp đôi - viết blog, check-in mood, và lưu giữ khoảnh khắc',
   icons: {
     icon: [
-      { url: '/icon.png', type: 'image/png' },
-      { url: '/icon.png', sizes: '512x512', type: 'image/png' },
+      { url: '/icon.png', type: 'image/png', sizes: '512x512' },
+      { url: '/favicon.ico', sizes: 'any' },
     ],
     apple: [
       { url: '/apple-icon.png', sizes: '180x180', type: 'image/png' },
     ],
+    shortcut: '/icon.png',
   },
   manifest: '/manifest.json',
   appleWebApp: {
