@@ -39,21 +39,41 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      // Dùng SDK Cloudinary (signed upload, không cần preset)
-      const { uploadImage } = await import('@/lib/cloudinary')
-      const result = await uploadImage(file)
+      // Thử signed upload trước (không cần preset)
+      const { uploadImage, uploadImageUnsigned, uploadImageDirectREST } = await import('@/lib/cloudinary')
+      let result
+      try {
+        result = await uploadImage(file)
+      } catch (signedErr: any) {
+        // Nếu signed upload fail, thử unsigned với preset (SDK)
+        console.warn('Signed upload failed, trying unsigned (SDK):', {
+          error: signedErr?.message,
+          http_code: signedErr?.http_code,
+        })
+        try {
+          result = await uploadImageUnsigned(file, 'my_love_unsigned')
+        } catch (unsignedErr: any) {
+          // Nếu unsigned SDK cũng fail, thử REST API trực tiếp (bypass SDK)
+          console.warn('Unsigned SDK upload failed, trying direct REST API:', {
+            error: unsignedErr?.message,
+            http_code: unsignedErr?.http_code,
+          })
+          result = await uploadImageDirectREST(file, 'my_love_unsigned')
+        }
+      }
       return NextResponse.json({
         url: result.url,
         publicId: result.publicId,
       })
     } catch (err: any) {
-      console.error('Cloudinary SDK error raw:', err)
-      console.error('Cloudinary SDK error detail:', {
+      console.error('Cloudinary upload error raw:', err)
+      console.error('Cloudinary upload error detail:', {
         name: err?.name,
         message: err?.message,
         http_code: err?.http_code,
         statusCode: err?.statusCode,
         error: err?.error,
+        stack: err?.stack?.split('\n').slice(0, 5), // First 5 lines of stack
       })
       return NextResponse.json(
         {
