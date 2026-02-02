@@ -1,0 +1,23 @@
+{
+  "name": "My Love - Couple App",
+  "short_name": "My Love",
+  "description": "App dành cho cặp đôi - viết blog, check-in mood, và lưu giữ khoảnh khắc",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFE5F1",
+  "theme_color": "#FF69B4",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/apple-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
