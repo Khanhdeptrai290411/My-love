@@ -57,7 +57,8 @@ export default function ReviewPage() {
 
   const { data: heatmapData, isLoading } = useSWR(
     `/api/review?year=${year}&view=${view}`,
-    fetcher
+    fetcher,
+    { revalidateOnFocus: true }
   )
 
   const days = getDaysInYear(year)

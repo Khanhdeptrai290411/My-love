@@ -34,7 +34,7 @@ export default function HomePage() {
   
   const { data: couple, isLoading: coupleLoading } = useSWR('/api/couple/me', fetcher)
   const { data: quote, isLoading: quoteLoading } = useSWR('/api/quote/today', fetcher)
-  const { data: postsData, isLoading: postsLoading, mutate: mutatePosts } = useSWR(`/api/posts?range=month&filter=${postFilter}`, fetcher)
+  const { data: postsData, isLoading: postsLoading, mutate: mutatePosts } = useSWR(`/api/posts?range=3month&filter=${postFilter}`, fetcher)
   const { data: moodMatchData } = useSWR('/api/mood-match/today', fetcher, {
     refreshInterval: 60000,
   })

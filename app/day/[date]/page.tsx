@@ -2,13 +2,16 @@
 
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
-import useSWR from 'swr'
+import { useEffect, useState, useRef } from 'react'
+import useSWR, { useSWRConfig } from 'swr'
 import Navbar from '@/components/Navbar'
 import Image from 'next/image'
 import Link from 'next/link'
+import toast from 'react-hot-toast'
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
+
+const MOOD_TYPES = ['happy', 'sad', 'calm', 'stressed', 'excited', 'tired', 'anxious', 'grateful'] as const
 
 const moodEmojis: Record<string, string> = {
   happy: '😊',
@@ -43,7 +46,136 @@ export default function DayDetailPage({ params }: { params: { date: string } }) 
     }
   }, [status, router])
 
-  const { data: dayData, isLoading } = useSWR(`/api/day?date=${date}`, fetcher)
+  const { data: dayData, isLoading, mutate: mutateDay } = useSWR(`/api/day?date=${date}`, fetcher)
+  const { mutate: globalMutate } = useSWRConfig()
+
+  // Form: cập nhật mood cho ngày này
+  const [moodType, setMoodType] = useState<string>('happy')
+  const [moodIntensity, setMoodIntensity] = useState(2)
+  const [moodNote, setMoodNote] = useState('')
+  const [savingMood, setSavingMood] = useState(false)
+
+  // Form: thêm bài đăng cho ngày này
+  const [postContent, setPostContent] = useState('')
+  const [postImages, setPostImages] = useState<{ url: string; publicId?: string }[]>([])
+  const [uploading, setUploading] = useState(false)
+  const [savingPost, setSavingPost] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const cameraInputRef = useRef<HTMLInputElement | null>(null)
+
+  // Pre-fill mood form when dayData has my mood
+  useEffect(() => {
+    if (dayData?.moods?.me) {
+      setMoodType(dayData.moods.me.mood || 'happy')
+      setMoodIntensity(dayData.moods.me.intensity ?? 2)
+      setMoodNote(dayData.moods.me.note || '')
+    }
+  }, [dayData?.moods?.me])
+
+  const uploadImageFile = async (file: File) => {
+    setUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const res = await fetch('/api/upload', { method: 'POST', body: formData })
+      const data = await res.json()
+      if (res.ok) {
+        setPostImages((prev) => [...prev, { url: data.url, publicId: data.publicId }])
+        toast.success('Thêm ảnh thành công!')
+      } else {
+        toast.error(data.error || 'Upload thất bại')
+      }
+    } catch {
+      toast.error('Có lỗi khi upload')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    for (const file of files) {
+      await uploadImageFile(file)
+    }
+    e.target.value = ''
+  }
+
+  const handlePasteImages = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = Array.from(e.clipboardData.items).filter((item) => item.type.startsWith('image/'))
+    if (!items.length) return
+    e.preventDefault()
+    for (const item of items) {
+      const file = item.getAsFile()
+      if (file) await uploadImageFile(file)
+    }
+  }
+
+  const handleSubmitMood = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSavingMood(true)
+    try {
+      const body = dayData?.moods?.me?.id
+        ? { eventId: dayData.moods.me.id, mood: moodType, intensity: moodIntensity, note: moodNote }
+        : { date, mood: moodType, intensity: moodIntensity, note: moodNote }
+      const res = await fetch('/api/moods', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        toast.success(dayData?.moods?.me ? 'Đã cập nhật mood!' : 'Đã thêm mood cho ngày này!')
+        mutateDay()
+        const year = date ? date.substring(0, 4) : new Date().getFullYear().toString()
+        globalMutate(`/api/review?year=${year}&view=couple`, undefined, { revalidate: true })
+        globalMutate(`/api/review?year=${year}&view=me`, undefined, { revalidate: true })
+        globalMutate(`/api/review?year=${year}&view=partner`, undefined, { revalidate: true })
+      } else {
+        toast.error(data.error || 'Lỗi khi lưu mood')
+      }
+    } catch {
+      toast.error('Có lỗi xảy ra')
+    } finally {
+      setSavingMood(false)
+    }
+  }
+
+  const handleSubmitPost = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!postContent.trim()) {
+      toast.error('Vui lòng nhập nội dung')
+      return
+    }
+    setSavingPost(true)
+    try {
+      const formattedImages = postImages.map((img) => ({
+        url: img.url,
+        ...(img.publicId && { publicId: img.publicId }),
+      }))
+      const res = await fetch('/api/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: postContent.trim(), images: formattedImages, date }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        toast.success('Đã thêm bài đăng cho ngày này!')
+        setPostContent('')
+        setPostImages([])
+        mutateDay()
+        globalMutate('/api/posts?range=3month&filter=both', undefined, { revalidate: true })
+        globalMutate('/api/posts?range=3month&filter=me', undefined, { revalidate: true })
+        globalMutate('/api/posts?range=3month&filter=partner', undefined, { revalidate: true })
+        globalMutate('/api/posts?range=3month', undefined, { revalidate: true })
+      } else {
+        toast.error(data.error || 'Lỗi khi đăng bài')
+      }
+    } catch {
+      toast.error('Có lỗi xảy ra')
+    } finally {
+      setSavingPost(false)
+    }
+  }
 
   if (status === 'loading' || isLoading) {
     return (
@@ -83,6 +215,146 @@ export default function DayDetailPage({ params }: { params: { date: string } }) 
             </p>
           </div>
         )}
+
+        {/* Cập nhật cho ngày này: mood + bài đăng */}
+        <div className="bg-pink-50 border border-pink-200 rounded-lg shadow-md p-6 mb-6">
+          <h2 className="text-xl font-semibold mb-4 text-gray-800">Cập nhật cho ngày {date}</h2>
+          <p className="text-sm text-gray-600 mb-4">
+            Bạn có thể thêm hoặc sửa mood và đăng bài cho ngày này (bù ngày đã quên).
+          </p>
+
+          {/* Form mood */}
+          <div className="mb-6">
+            <h3 className="font-medium text-gray-700 mb-3">Mood của bạn</h3>
+            <form onSubmit={handleSubmitMood} className="space-y-3">
+              <div className="flex flex-wrap gap-4 items-center">
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">Cảm xúc</label>
+                  <select
+                    value={moodType}
+                    onChange={(e) => setMoodType(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white"
+                  >
+                    {MOOD_TYPES.map((m) => (
+                      <option key={m} value={m}>
+                        {moodEmojis[m]} {moodLabels[m]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">Cường độ (1–3)</label>
+                  <select
+                    value={moodIntensity}
+                    onChange={(e) => setMoodIntensity(Number(e.target.value))}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white"
+                  >
+                    {[1, 2, 3].map((n) => (
+                      <option key={n} value={n}>
+                        {n}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Ghi chú (tùy chọn)</label>
+                <input
+                  type="text"
+                  value={moodNote}
+                  onChange={(e) => setMoodNote(e.target.value)}
+                  placeholder="Ví dụ: Đi chơi với bạn..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white placeholder-gray-400"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={savingMood}
+                className="px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 disabled:opacity-50"
+              >
+                {savingMood ? 'Đang lưu...' : dayData?.moods?.me ? 'Cập nhật mood' : 'Thêm mood cho ngày này'}
+              </button>
+            </form>
+          </div>
+
+          {/* Form bài đăng */}
+          <div>
+            <h3 className="font-medium text-gray-700 mb-3">Thêm bài đăng cho ngày này</h3>
+            <form onSubmit={handleSubmitPost} className="space-y-3">
+              <textarea
+                value={postContent}
+                onChange={(e) => setPostContent(e.target.value)}
+                onPaste={handlePasteImages}
+                placeholder="Viết về ngày đó..."
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 min-h-[100px] text-gray-900 placeholder-gray-400 bg-white resize-none"
+              />
+              <div className="flex items-center gap-3 flex-wrap">
+                <label className="cursor-pointer">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleImageUpload}
+                    disabled={uploading}
+                    className="hidden"
+                  />
+                  <span className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 font-medium">
+                    📷 Album
+                  </span>
+                </label>
+                <input
+                  ref={cameraInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleImageUpload}
+                  disabled={uploading}
+                  className="hidden"
+                  aria-hidden
+                />
+                <button
+                  type="button"
+                  onClick={() => cameraInputRef.current?.click()}
+                  disabled={uploading}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 font-medium disabled:opacity-50"
+                >
+                  📸 Chụp ảnh
+                </button>
+                {uploading && <span className="text-sm text-gray-500">Đang tải ảnh...</span>}
+              </div>
+              {postImages.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {postImages.map((img, index) => (
+                    <div key={index} className="relative group">
+                      <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center">
+                        {img.url.startsWith('data:') ? (
+                          <img src={img.url} alt="" className="w-full h-full object-contain" />
+                        ) : (
+                          <Image src={img.url} alt="" width={80} height={80} className="w-full h-full object-contain" unoptimized={!img.url.includes('cloudinary')} />
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setPostImages((prev) => prev.filter((_, i) => i !== index))}
+                        className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <button
+                type="submit"
+                disabled={savingPost || uploading || !postContent.trim()}
+                className="px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 disabled:opacity-50"
+              >
+                {savingPost ? 'Đang đăng...' : 'Đăng bài cho ngày này'}
+              </button>
+            </form>
+          </div>
+        </div>
 
         {/* Mood Events Timeline */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">

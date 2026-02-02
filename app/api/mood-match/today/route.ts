@@ -17,7 +17,7 @@ export async function GET() {
     }
 
     await connectDB()
-    const user = await User.findOne({ email: session.user.email })
+    const user = await User.findOne({ email: session.user.email }).select('_id')
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
@@ -65,7 +65,9 @@ export async function GET() {
     }
 
     if (!myMood || !partnerMood) {
-      const partner = await User.findById(partnerId)
+      const partner = partnerId
+        ? await User.findById(partnerId).select('name').lean()
+        : null
       return NextResponse.json({
         status: 'ONE_SIDED',
         message: myMood
@@ -88,7 +90,9 @@ export async function GET() {
       })
     }
 
-    const partner = await User.findById(partnerId)
+    const partner = partnerId
+      ? await User.findById(partnerId).select('name').lean()
+      : null
     if (myMood.mood === partnerMood.mood) {
       return NextResponse.json({
         status: 'MATCH',
@@ -121,9 +125,14 @@ export async function GET() {
       })
     }
   } catch (error: any) {
-    console.error('Get mood match error:', error)
+    console.error('Get mood match error:', error?.message ?? error)
     return NextResponse.json(
-      { error: error.message || 'Failed to get mood match' },
+      {
+        error: error?.message || 'Failed to get mood match',
+        hint: process.env.NODE_ENV === 'development' && error?.message
+          ? String(error.message)
+          : undefined,
+      },
       { status: 500 }
     )
   }

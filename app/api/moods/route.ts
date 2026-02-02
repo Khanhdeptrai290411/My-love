@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { mood, intensity, note, eventId } = await req.json()
+    const { mood, intensity, note, eventId, date: requestDate } = await req.json()
     if (!mood || intensity === undefined) {
       return NextResponse.json(
         { error: 'Mood and intensity required' },
@@ -33,7 +33,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No couple found' }, { status: 404 })
     }
 
+    // Use requested date if valid (YYYY-MM-DD), otherwise today (for backfilling past days)
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/
     const today = getTodayDate()
+    const useDate =
+      typeof requestDate === 'string' && dateRegex.test(requestDate)
+        ? requestDate
+        : today
 
     // If eventId provided, update existing event
     if (eventId) {
@@ -64,11 +70,11 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // Create new event
+    // Create new event (for today or backdated date)
     const moodEvent = await MoodEvent.create({
       coupleId: couple._id,
       userId: user._id,
-      date: today,
+      date: useDate,
       mood,
       intensity: Math.max(0, Math.min(3, intensity)),
       note: note || '',

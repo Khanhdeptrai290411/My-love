@@ -17,56 +17,82 @@ if (!global.mongoose) {
   global.mongoose = cached
 }
 
+/** Clear cached connection so next connectDB() creates a fresh one. Call on connection errors. */
+export function clearMongoCache() {
+  cached.conn = null
+  cached.promise = null
+  if (global.mongoose) {
+    global.mongoose.conn = null
+    global.mongoose.promise = null
+  }
+  mongoose.disconnect().catch(() => {})
+}
+
+function isConnectionError(err: any): boolean {
+  const msg = err?.message?.toLowerCase() ?? ''
+  return (
+    msg.includes('timeout') ||
+    msg.includes('timed out') ||
+    msg.includes('closed') ||
+    msg.includes('interrupted') ||
+    msg.includes('not connected') ||
+    err?.name === 'MongoNotConnectedError' ||
+    err?.name === 'MongoServerSelectionError' ||
+    err?.name === 'MongoNetworkError'
+  )
+}
+
+export { isConnectionError }
+
 async function connectDB() {
   if (!MONGODB_URI) {
     throw new Error('Please add your MONGODB_URI to .env.local')
   }
 
-  // Check if connection is ready
+  // Reuse existing connection only if really ready (serverless can freeze and close it)
   if (cached.conn && mongoose.connection.readyState === 1) {
     return cached.conn
   }
 
-  // If connection exists but is not ready, reset it
-  if (cached.conn && mongoose.connection.readyState !== 1) {
-    console.log('MongoDB connection not ready, resetting...')
-    cached.conn = null
-    cached.promise = null
-    await mongoose.disconnect().catch(() => {}) // Ignore disconnect errors
+  // Stale or dead connection: clear and disconnect so we get a fresh connect
+  if (cached.conn || cached.promise) {
+    console.log('MongoDB connection not ready or stale, resetting...')
+    clearMongoCache()
   }
 
-  if (!cached.promise) {
-    const opts = {
-      bufferCommands: false,
-      serverSelectionTimeoutMS: 10000, // 10 seconds timeout
-      socketTimeoutMS: 45000, // 45 seconds socket timeout
-      connectTimeoutMS: 10000, // 10 seconds connection timeout
-      maxPoolSize: 5, // Reduced pool size
-      minPoolSize: 0, // Don't maintain persistent connections
-      maxIdleTimeMS: 10000, // Close idle connections quickly
-      retryWrites: true,
-      retryReads: true,
-      heartbeatFrequencyMS: 10000, // Check connection health every 10s
-    }
-    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
-      console.log('MongoDB connected successfully')
-      return mongoose
-    }).catch((error) => {
-      console.error('MongoDB connection failed:', error.message)
-      cached.promise = null
-      throw error
-    })
+  const opts = {
+    bufferCommands: false,
+    serverSelectionTimeoutMS: 10000, // 10s to pick server (slow networks)
+    connectTimeoutMS: 10000, // 10s to establish connection
+    socketTimeoutMS: 60000, // 60s per operation (high latency to Atlas)
+    maxPoolSize: 2,
+    minPoolSize: 0,
+    maxIdleTimeMS: 10000,
+    retryWrites: true,
+    retryReads: true,
   }
+
+  cached.promise = mongoose
+    .connect(MONGODB_URI, opts)
+    .then((m) => {
+      console.log('MongoDB connected')
+      return m
+    })
+    .catch((err) => {
+      console.error('MongoDB connection failed:', err?.message)
+      cached.promise = null
+      cached.conn = null
+      throw err
+    })
 
   try {
     cached.conn = await cached.promise
-    // Verify connection is actually ready
     if (mongoose.connection.readyState !== 1) {
+      clearMongoCache()
       throw new Error('MongoDB connection not ready after connect')
     }
   } catch (e) {
-    cached.promise = null
-    cached.conn = null
+    clearMongoCache()
     throw e
   }
 

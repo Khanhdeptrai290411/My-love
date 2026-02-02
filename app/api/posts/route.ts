@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import connectDB from '@/lib/mongodb'
+import connectDB, { clearMongoCache, isConnectionError } from '@/lib/mongodb'
 import { Post } from '@/models/Post'
 import { Couple } from '@/models/Couple'
 import { User } from '@/models/User'
@@ -32,7 +32,25 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    await connectDB()
+    try {
+      await connectDB()
+    } catch (connectError: any) {
+      console.error('connectDB failed:', connectError?.message)
+      if (isConnectionError(connectError)) {
+        clearMongoCache()
+        return NextResponse.json(
+          {
+            error: 'Database connection failed.',
+            hint: process.env.NODE_ENV === 'development'
+              ? 'Check MONGODB_URI in .env.local and MongoDB Atlas Network Access (allow 0.0.0.0/0 or your IP).'
+              : undefined,
+          },
+          { status: 503 }
+        )
+      }
+      throw connectError
+    }
+
     const user = await User.findOne({ email: session.user.email })
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
@@ -48,7 +66,11 @@ export async function GET(req: NextRequest) {
     const filter = searchParams.get('filter') || 'both' // 'me' | 'partner' | 'both'
 
     let startDate = getTodayDate()
-    if (range === 'month') {
+    if (range === '3month') {
+      const date = new Date()
+      date.setMonth(date.getMonth() - 3)
+      startDate = date.toISOString().split('T')[0]
+    } else if (range === 'month') {
       const date = new Date()
       date.setMonth(date.getMonth() - 1)
       startDate = date.toISOString().split('T')[0]
@@ -94,38 +116,32 @@ export async function GET(req: NextRequest) {
 
     let posts: any[] = []
     try {
-      // Check MongoDB connection before querying
       if (mongoose.connection.readyState !== 1) {
-        console.log('MongoDB not ready, reconnecting...')
         await connectDB()
       }
-      
       posts = await Post.find(query)
         .sort({ date: -1, createdAt: -1 })
+        .limit(200)
         .lean()
     } catch (queryError: any) {
       console.error('Error querying posts:', queryError?.message || queryError)
-      
-      // If connection error, try to reset and retry once
-      if (queryError?.message?.includes('timeout') || queryError?.message?.includes('connection')) {
-        console.log('Connection error detected, resetting connection...')
+      if (isConnectionError(queryError)) {
+        clearMongoCache()
         try {
-          await mongoose.disconnect().catch(() => {})
-          // Clear cache to force reconnect
-          if (global.mongoose) {
-            global.mongoose.conn = null
-            global.mongoose.promise = null
-          }
           await connectDB()
-          
-          // Retry query once
           posts = await Post.find(query)
             .sort({ date: -1, createdAt: -1 })
+            .limit(200)
             .lean()
         } catch (retryError: any) {
           console.error('Retry also failed:', retryError?.message || retryError)
           return NextResponse.json(
-            { error: 'Database connection failed. Please try again later.' },
+            {
+              error: 'Database connection failed. Please try again later.',
+              hint: process.env.NODE_ENV === 'development'
+                ? 'Check MONGODB_URI in .env.local and MongoDB Atlas Network Access.'
+                : undefined,
+            },
             { status: 503 }
           )
         }
@@ -323,10 +339,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { content, images, postId } = await req.json()
+    const { content, images, postId, date: requestDate } = await req.json()
     if (!content) {
       return NextResponse.json({ error: 'Content required' }, { status: 400 })
     }
+
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/
+    const today = getTodayDate()
+    const useDate =
+      typeof requestDate === 'string' && dateRegex.test(requestDate)
+        ? requestDate
+        : today
     
     // Ensure images is an array
     const postImages = Array.isArray(images) ? images : []
@@ -360,13 +383,12 @@ export async function POST(req: NextRequest) {
       post.images = postImages
       await post.save()
     } else {
-      // Create new post (allow multiple posts per day)
-      const today = getTodayDate()
-      console.log('Creating post with images:', postImages.length)
+      // Create new post (allow multiple posts per day; date can be backdated)
+      console.log('Creating post with images:', postImages.length, 'date:', useDate)
       post = await Post.create({
         coupleId: couple._id,
         authorId: user._id,
-        date: today,
+        date: useDate,
         content,
         images: postImages,
       })
