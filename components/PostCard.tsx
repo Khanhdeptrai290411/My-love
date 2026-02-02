@@ -669,8 +669,12 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
                 if (!file) return
                 setUploading(true)
                 try {
+                  // Compress ảnh trước khi upload để giảm kích thước và tăng tốc độ
+                  const { compressImage } = await import('@/lib/utils')
+                  const compressedFile = await compressImage(file, 1920, 1920, 0.85)
+
                   const formData = new FormData()
-                  formData.append('file', file)
+                  formData.append('file', compressedFile)
                   const res = await fetch('/api/upload', { method: 'POST', body: formData })
                   const data = await res.json()
                   if (res.ok) {

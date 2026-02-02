@@ -205,9 +205,13 @@ export default function SettingsPage() {
                         input.onchange = async (e: any) => {
                           const file = e.target.files?.[0]
                           if (!file) return
-                          const formData = new FormData()
-                          formData.append('file', file)
                           try {
+                            // Compress ảnh trước khi upload (avatar nhỏ hơn nên resize nhỏ hơn)
+                            const { compressImage } = await import('@/lib/utils')
+                            const compressedFile = await compressImage(file, 800, 800, 0.85)
+
+                            const formData = new FormData()
+                            formData.append('file', compressedFile)
                             const res = await fetch('/api/upload', { method: 'POST', body: formData })
                             const data = await res.json()
                             if (res.ok) {

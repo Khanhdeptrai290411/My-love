@@ -75,8 +75,12 @@ export default function DayDetailPage({ params }: { params: { date: string } }) 
   const uploadImageFile = async (file: File) => {
     setUploading(true)
     try {
+      // Compress ảnh trước khi upload để giảm kích thước và tăng tốc độ
+      const { compressImage } = await import('@/lib/utils')
+      const compressedFile = await compressImage(file, 1920, 1920, 0.85)
+
       const formData = new FormData()
-      formData.append('file', file)
+      formData.append('file', compressedFile)
       const res = await fetch('/api/upload', { method: 'POST', body: formData })
       const data = await res.json()
       if (res.ok) {
@@ -94,9 +98,9 @@ export default function DayDetailPage({ params }: { params: { date: string } }) 
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
-    for (const file of files) {
-      await uploadImageFile(file)
-    }
+    // Upload song song để tăng tốc độ
+    const uploadPromises = files.map((file) => uploadImageFile(file))
+    await Promise.all(uploadPromises)
     e.target.value = ''
   }
 
@@ -104,10 +108,10 @@ export default function DayDetailPage({ params }: { params: { date: string } }) 
     const items = Array.from(e.clipboardData.items).filter((item) => item.type.startsWith('image/'))
     if (!items.length) return
     e.preventDefault()
-    for (const item of items) {
-      const file = item.getAsFile()
-      if (file) await uploadImageFile(file)
-    }
+    // Upload song song các ảnh đã paste
+    const files = items.map((item) => item.getAsFile()).filter((f): f is File => !!f)
+    const uploadPromises = files.map((file) => uploadImageFile(file))
+    await Promise.all(uploadPromises)
   }
 
   const handleSubmitMood = async (e: React.FormEvent) => {

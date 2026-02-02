@@ -84,8 +84,12 @@ export default function HomePage() {
   const uploadImageFile = async (file: File) => {
     setUploading(true)
     try {
+      // Compress ảnh trước khi upload để giảm kích thước và tăng tốc độ
+      const { compressImage } = await import('@/lib/utils')
+      const compressedFile = await compressImage(file, 1920, 1920, 0.85)
+
       const formData = new FormData()
-      formData.append('file', file)
+      formData.append('file', compressedFile)
 
       const res = await fetch('/api/upload', {
         method: 'POST',
@@ -116,11 +120,9 @@ export default function HomePage() {
     const files = Array.from(e.target.files || [])
     if (!files.length) return
 
-    for (const file of files) {
-      // Upload tuần tự để trạng thái uploading rõ ràng
-      // eslint-disable-next-line no-await-in-loop
-      await uploadImageFile(file)
-    }
+    // Upload song song để tăng tốc độ (nếu có nhiều ảnh)
+    const uploadPromises = files.map((file) => uploadImageFile(file))
+    await Promise.all(uploadPromises)
 
     // Reset input để chọn lại cùng file nếu muốn
     e.target.value = ''
@@ -134,13 +136,10 @@ export default function HomePage() {
 
     e.preventDefault()
 
-    for (const item of items) {
-      const file = item.getAsFile()
-      if (file) {
-        // eslint-disable-next-line no-await-in-loop
-        await uploadImageFile(file)
-      }
-    }
+    // Upload song song các ảnh đã paste
+    const files = items.map((item) => item.getAsFile()).filter((f): f is File => !!f)
+    const uploadPromises = files.map((file) => uploadImageFile(file))
+    await Promise.all(uploadPromises)
   }
 
   const handleRemoveImage = (index: number) => {

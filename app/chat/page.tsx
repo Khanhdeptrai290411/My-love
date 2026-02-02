@@ -60,14 +60,18 @@ export default function ChatPage() {
 
     setSending(true)
     try {
-      // Upload all pending images first
+      // Upload all pending images first (song song để tăng tốc độ)
       const imageUrls: string[] = []
       
-      for (const pendingImage of pendingImages) {
+      const uploadPromises = pendingImages.map(async (pendingImage) => {
         setUploadingImages(prev => ({ ...prev, [pendingImage.id]: true }))
         try {
+          // Compress ảnh trước khi upload
+          const { compressImage } = await import('@/lib/utils')
+          const compressedFile = await compressImage(pendingImage.file, 1920, 1920, 0.85)
+
           const formData = new FormData()
-          formData.append('file', pendingImage.file)
+          formData.append('file', compressedFile)
           const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData })
           const uploadData = await uploadRes.json()
           if (uploadRes.ok) {
@@ -84,7 +88,9 @@ export default function ChatPage() {
             return newState
           })
         }
-      }
+      })
+      
+      await Promise.all(uploadPromises)
 
       // Send message(s) - one message per image, or one message with text if no images
       if (imageUrls.length > 0) {
