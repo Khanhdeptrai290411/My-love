@@ -68,7 +68,7 @@ export default function ChatPage() {
         try {
           // Compress ảnh trước khi upload
           const { compressImage } = await import('@/lib/utils')
-          const compressedFile = await compressImage(pendingImage.file, 1920, 1920, 0.85)
+          const compressedFile = await compressImage(pendingImage.file, 2560, 2560, 0.92)
 
           const formData = new FormData()
           formData.append('file', compressedFile)

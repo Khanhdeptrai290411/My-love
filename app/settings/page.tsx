@@ -208,7 +208,7 @@ export default function SettingsPage() {
                           try {
                             // Compress ảnh trước khi upload (avatar nhỏ hơn nên resize nhỏ hơn)
                             const { compressImage } = await import('@/lib/utils')
-                            const compressedFile = await compressImage(file, 800, 800, 0.85)
+                            const compressedFile = await compressImage(file, 1200, 1200, 0.9)
 
                             const formData = new FormData()
                             formData.append('file', compressedFile)

@@ -58,16 +58,16 @@ export function formatDate(date: Date | string): string {
 /**
  * Compress và resize ảnh trước khi upload để giảm kích thước file và tăng tốc độ upload
  * @param file File ảnh gốc
- * @param maxWidth Chiều rộng tối đa (mặc định 1920px)
- * @param maxHeight Chiều cao tối đa (mặc định 1920px)
- * @param quality Chất lượng JPEG (0-1, mặc định 0.85)
+ * @param maxWidth Chiều rộng tối đa (mặc định 2560px)
+ * @param maxHeight Chiều cao tối đa (mặc định 2560px)
+ * @param quality Chất lượng JPEG (0-1, mặc định 0.92)
  * @returns Promise<File> File ảnh đã được compress
  */
 export async function compressImage(
   file: File,
-  maxWidth: number = 1920,
-  maxHeight: number = 1920,
-  quality: number = 0.85
+  maxWidth: number = 2560,
+  maxHeight: number = 2560,
+  quality: number = 0.92
 ): Promise<File> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()

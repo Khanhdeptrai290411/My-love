@@ -77,7 +77,7 @@ export default function DayDetailPage({ params }: { params: { date: string } }) 
     try {
       // Compress ảnh trước khi upload để giảm kích thước và tăng tốc độ
       const { compressImage } = await import('@/lib/utils')
-      const compressedFile = await compressImage(file, 1920, 1920, 0.85)
+      const compressedFile = await compressImage(file, 2560, 2560, 0.92)
 
       const formData = new FormData()
       formData.append('file', compressedFile)
