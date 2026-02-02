@@ -64,6 +64,8 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const range = searchParams.get('range') || 'week'
     const filter = searchParams.get('filter') || 'both' // 'me' | 'partner' | 'both'
+    const limit = Math.min(Math.max(parseInt(searchParams.get('limit') || '30', 10), 1), 200)
+    const skip = Math.max(parseInt(searchParams.get('skip') || '0', 10), 0)
 
     let startDate = getTodayDate()
     if (range === '3month') {
@@ -121,7 +123,8 @@ export async function GET(req: NextRequest) {
       }
       posts = await Post.find(query)
         .sort({ date: -1, createdAt: -1 })
-        .limit(200)
+        .skip(skip)
+        .limit(limit)
         .lean()
     } catch (queryError: any) {
       console.error('Error querying posts:', queryError?.message || queryError)
@@ -131,7 +134,8 @@ export async function GET(req: NextRequest) {
           await connectDB()
           posts = await Post.find(query)
             .sort({ date: -1, createdAt: -1 })
-            .limit(200)
+            .skip(skip)
+            .limit(limit)
             .lean()
         } catch (retryError: any) {
           console.error('Retry also failed:', retryError?.message || retryError)
@@ -214,8 +218,9 @@ export async function GET(req: NextRequest) {
     try {
       postsData = posts.map((p: any) => {
       try {
-        // Ensure images array is properly formatted
-        const postImages = Array.isArray(p.images) ? p.images : []
+        // Ensure images is always an array (support legacy: string/object)
+        const rawImages = (p as any).images
+        const postImages = Array.isArray(rawImages) ? rawImages : rawImages ? [rawImages] : []
         
         // Get author info from map - handle both ObjectId and string
         const authorId = objectIdToString(p.authorId)
@@ -257,6 +262,9 @@ export async function GET(req: NextRequest) {
               }
             }
             return { url: '' }
+          }).filter((img: any) => {
+            const url = typeof img?.url === 'string' ? img.url.trim() : ''
+            return url.startsWith('data:') || url.startsWith('http://') || url.startsWith('https://')
           }),
           starred: Boolean(p.starred || false),
           createdAt: String(createdAt),
@@ -307,8 +315,10 @@ export async function GET(req: NextRequest) {
       postsData = []
     }
 
+    const hasMore = posts.length === limit
+
     try {
-      return NextResponse.json({ posts: postsData })
+      return NextResponse.json({ posts: postsData, hasMore })
     } catch (jsonError: any) {
       console.error('Error serializing JSON:', jsonError?.message || jsonError)
       // Try to return at least empty array

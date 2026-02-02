@@ -20,7 +20,7 @@ export default function StarsPage() {
     }
   }, [status, router])
 
-  const { data: postsData, isLoading } = useSWR('/api/posts?range=3month', fetcher)
+  const { data: postsData, isLoading } = useSWR('/api/posts?range=3month&limit=200', fetcher)
 
   const starredPosts = postsData?.posts?.filter((p: any) => p.starred) || []
 

@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "next lint",
     "fix-index": "node scripts/drop-unique-index.mjs",
-    "migrate-start-date": "node scripts/migrate-start-date.mjs"
+    "migrate-start-date": "node scripts/migrate-start-date.mjs",
+    "migrate-images-cloudinary": "node scripts/migrate-images-to-cloudinary.mjs",
+    "migrate-user-avatars-cloudinary": "node scripts/migrate-user-avatars-to-cloudinary.mjs"
   },
   "dependencies": {
     "next": "^14.0.0",
@@ -35,6 +37,8 @@
     "tailwindcss": "^3.3.0",
     "postcss": "^8.4.0",
     "autoprefixer": "^10.4.0",
+    "dotenv": "^16.3.1",
+    "sharp": "^0.33.0",
     "eslint": "^8.54.0",
     "eslint-config-next": "^14.0.0"
   }

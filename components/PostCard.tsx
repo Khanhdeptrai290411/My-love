@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { useSession } from 'next-auth/react'
+import LazyImage from '@/components/LazyImage'
 import toast from 'react-hot-toast'
 import useSWR from 'swr'
 
@@ -162,11 +163,6 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
   const [editImages, setEditImages] = useState(post.images || [])
   const [imageViewerOpen, setImageViewerOpen] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
-  
-  // Debug: log images when post changes
-  useEffect(() => {
-    console.log('PostCard - Post images:', post.images)
-  }, [post.images])
   const [isSaving, setIsSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -766,6 +762,13 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
                   console.warn('Invalid image at index', index, img)
                   return null
                 }
+                const url = String(img.url || '').trim()
+                const isValidUrl =
+                  url.startsWith('data:') || url.startsWith('http://') || url.startsWith('https://')
+                if (!isValidUrl) {
+                  console.warn('Skipping invalid image url at index', index, url)
+                  return null
+                }
                 const isFirstImage = index === 0
                 const isLastImage = index === post.images.length - 1
                 const isOnlyImage = post.images.length === 1
@@ -791,42 +794,26 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
                       onClick={handleOpenViewer}
                       className="block w-full focus:outline-none"
                     >
-                      {img.url.startsWith('data:') ? (
-                        <img
-                          src={img.url}
-                          alt={`Post image ${index + 1}`}
-                          className={`w-full h-auto object-contain ${
-                            isOnlyImage ? 'max-h-96' : 'max-h-64'
-                          }`}
-                          style={{ maxWidth: '100%' }}
-                          onError={(e) => {
-                            console.error('Image load error:', img.url?.substring(0, 50))
-                          }}
-                        />
-                      ) : (
-                        <Image
-                          src={img.url}
-                          alt={`Post image ${index + 1}`}
-                          width={400}
-                          height={400}
-                          className={`w-full h-auto object-contain ${
-                            isOnlyImage ? 'max-h-96' : 'max-h-64'
-                          }`}
-                          style={{ maxWidth: '100%', height: 'auto' }}
-                          unoptimized={img.url.startsWith('http') && !img.url.includes('cloudinary')}
-                          onError={(e) => {
-                            console.error('Image load error:', img.url)
-                          }}
-                        />
-                      )}
+                      <LazyImage
+                        src={url}
+                        alt={`Post image ${index + 1}`}
+                        isDataUrl={url.startsWith('data:')}
+                        className={`w-full h-auto object-contain ${
+                          isOnlyImage ? 'max-h-96' : 'max-h-64'
+                        }`}
+                        width={400}
+                        height={400}
+                        unoptimized={url.startsWith('http') && !url.includes('cloudinary')}
+                        onError={() => {
+                          console.error('Image load error:', url?.substring(0, 120))
+                        }}
+                      />
                     </button>
                   </div>
                 )
               })}
             </div>
-          ) : (
-            post.images && console.log('Post has images but not array:', post.images)
-          )}
+          ) : null}
 
           {/* Reactions Summary */}
           {getTotalReactions() > 0 && (

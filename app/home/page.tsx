@@ -33,8 +33,33 @@ export default function HomePage() {
   const [postFilter, setPostFilter] = useState<'me' | 'partner' | 'both'>('both')
   
   const { data: couple, isLoading: coupleLoading } = useSWR('/api/couple/me', fetcher)
+
+  useEffect(() => {
+    if (!coupleLoading && couple && !couple?.couple) {
+      router.push('/couple')
+    }
+  }, [coupleLoading, couple, router])
   const { data: quote, isLoading: quoteLoading } = useSWR('/api/quote/today', fetcher)
-  const { data: postsData, isLoading: postsLoading, mutate: mutatePosts } = useSWR(`/api/posts?range=3month&filter=${postFilter}`, fetcher)
+
+  const [postsSkip, setPostsSkip] = useState(0)
+  const [accumulatedPosts, setAccumulatedPosts] = useState<any[]>([])
+  const { data: postsResponse, isLoading: postsLoading, mutate: mutatePosts } = useSWR(
+    `/api/posts?range=3month&filter=${postFilter}&limit=30&skip=${postsSkip}`,
+    fetcher
+  )
+  useEffect(() => {
+    if (!postsResponse?.posts) return
+    if (postsSkip === 0) {
+      setAccumulatedPosts(postsResponse.posts)
+    } else {
+      setAccumulatedPosts((prev) => [...prev, ...postsResponse.posts])
+    }
+  }, [postsResponse, postsSkip])
+  useEffect(() => {
+    setPostsSkip(0)
+    setAccumulatedPosts([])
+  }, [postFilter])
+
   const { data: moodMatchData } = useSWR('/api/mood-match/today', fetcher, {
     refreshInterval: 60000,
   })
@@ -128,6 +153,7 @@ export default function HomePage() {
         toast.success('Đã đăng bài!')
         setPostContent('')
         setPostImages([])
+        setPostsSkip(0)
         mutatePosts()
       } else {
         toast.error(data.error || 'Lỗi khi đăng bài')
@@ -148,7 +174,6 @@ export default function HomePage() {
   }
 
   if (!couple?.couple) {
-    router.push('/couple')
     return null
   }
 
@@ -402,7 +427,7 @@ export default function HomePage() {
               </button>
             </div>
           </div>
-          {postsLoading ? (
+          {postsLoading && accumulatedPosts.length === 0 ? (
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="animate-pulse bg-white rounded-lg shadow-md p-4">
@@ -411,11 +436,23 @@ export default function HomePage() {
                 </div>
               ))}
             </div>
-          ) : postsData?.posts?.length > 0 ? (
+          ) : accumulatedPosts.length > 0 ? (
             <div className="space-y-4">
-              {postsData.posts.map((post: any) => (
-                <PostCard key={post.id} post={post} onUpdate={mutatePosts} />
+              {accumulatedPosts.map((post: any) => (
+                <PostCard key={post.id} post={post} onUpdate={() => { setPostsSkip(0); mutatePosts() }} />
               ))}
+              {postsResponse?.hasMore && (
+                <div className="flex justify-center py-4">
+                  <button
+                    type="button"
+                    onClick={() => setPostsSkip((s) => s + 30)}
+                    disabled={postsLoading}
+                    className="px-6 py-2 bg-pink-100 text-pink-700 rounded-lg font-medium hover:bg-pink-200 transition disabled:opacity-50"
+                  >
+                    {postsLoading ? 'Đang tải...' : 'Xem thêm'}
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             <div className="bg-white rounded-lg shadow-md p-12 text-center">

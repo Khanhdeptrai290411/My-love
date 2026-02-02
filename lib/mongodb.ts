@@ -1,5 +1,9 @@
 import mongoose from 'mongoose'
 
+/**
+ * Vercel/serverless: dùng DB name KHÔNG có dấu - (ví dụ my_love thay vì my-love)
+ * để tránh MongoNetworkTimeout. Ví dụ: ...mongodb.net/my_love?retryWrites=...
+ */
 const MONGODB_URI: string = process.env.MONGODB_URI || ''
 
 interface MongooseCache {
@@ -47,6 +51,11 @@ export { isConnectionError }
 async function connectDB() {
   if (!MONGODB_URI) {
     throw new Error('Please add your MONGODB_URI to .env.local')
+  }
+  if (MONGODB_URI.includes('cluster.xxxxx') || MONGODB_URI.includes('xxxxx.mongodb.net')) {
+    throw new Error(
+      'MONGODB_URI đang dùng placeholder "cluster.xxxxx". Vào MongoDB Atlas → Database → Connect → Drivers → copy connection string thật (host dạng cluster0.XXXXX.mongodb.net), thay vào .env.local'
+    )
   }
 
   // Reuse existing connection only if really ready (serverless can freeze and close it)

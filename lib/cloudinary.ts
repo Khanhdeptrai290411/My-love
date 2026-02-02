@@ -30,6 +30,32 @@ export async function uploadImage(file: File): Promise<{ url: string; publicId: 
   })
 }
 
+/** Upload from buffer (e.g. base64 decoded). Dùng cho migration ảnh cũ lên Cloudinary. */
+export async function uploadImageFromBuffer(
+  buffer: Buffer,
+  mimeType: string = 'image/jpeg'
+): Promise<{ url: string; publicId: string }> {
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder: 'my-love-app',
+        resource_type: 'image',
+      },
+      (error, result) => {
+        if (error || !result) {
+          reject(error || new Error('Upload failed'))
+          return
+        }
+        resolve({
+          url: result.secure_url,
+          publicId: result.public_id,
+        })
+      }
+    )
+    uploadStream.end(buffer)
+  })
+}
+
 export async function deleteImage(publicId: string): Promise<void> {
   await cloudinary.uploader.destroy(publicId)
 }
