@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 
+// BẮT BUỘC chạy Node.js runtime (Cloudinary SDK không hỗ trợ Edge runtime)
+export const runtime = 'nodejs'
+
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -42,21 +45,21 @@ export async function POST(req: NextRequest) {
         url: result.url,
         publicId: result.publicId,
       })
-    } catch (error: any) {
-      console.error('Cloudinary upload failed:', {
-        message: error?.message,
-        http_code: error?.http_code,
-        name: error?.name,
-        cloudName: cloudName,
-        apiKeyPrefix: apiKey?.substring(0, 3) + '...',
+    } catch (err: any) {
+      console.error('Cloudinary error raw:', err)
+      console.error('Cloudinary error detail:', {
+        name: err?.name,
+        message: err?.message,
+        http_code: err?.http_code,
+        statusCode: err?.statusCode,
+        error: err?.error,
       })
       return NextResponse.json(
         {
-          error:
-            'Upload Cloudinary thất bại. Kiểm tra cấu hình CLOUDINARY_* và thử lại. Chi tiết: ' +
-            (error?.message || error?.http_code || 'Unknown error'),
+          error: err?.message ?? 'Upload Cloudinary thất bại',
+          detail: err?.error ?? null,
         },
-        { status: 502 }
+        { status: err?.http_code ?? 502 }
       )
     }
   } catch (error: any) {
