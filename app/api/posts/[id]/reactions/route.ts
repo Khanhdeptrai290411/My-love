@@ -7,6 +7,8 @@ import { Post } from '@/models/Post'
 import { User } from '@/models/User'
 import { Couple } from '@/models/Couple'
 
+export const runtime = 'nodejs'
+
 // Get all reactions for a post
 export async function GET(
   req: NextRequest,

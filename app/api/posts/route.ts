@@ -8,6 +8,7 @@ import { User } from '@/models/User'
 import { getTodayDate } from '@/lib/utils'
 import mongoose from 'mongoose'
 
+export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 // Helper to safely convert ObjectId to string

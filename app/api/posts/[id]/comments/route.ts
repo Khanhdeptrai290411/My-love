@@ -7,6 +7,8 @@ import { Post } from '@/models/Post'
 import { User } from '@/models/User'
 import { Couple } from '@/models/Couple'
 
+export const runtime = 'nodejs'
+
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
