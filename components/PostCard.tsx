@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { useSession } from 'next-auth/react'
 import LazyImage from '@/components/LazyImage'
+import LinkPreview from '@/components/LinkPreview'
 import toast from 'react-hot-toast'
 import useSWR from 'swr'
 
@@ -622,6 +623,49 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
     return date.toLocaleDateString('vi-VN')
   }
 
+  const renderContentWithLinks = (content: string) => {
+    if (!content) return null
+
+    // URL Regex to find links (including http, https)
+    const urlRegex = /(https?:\/\/[^\s]+)/g
+    const parts = content.split(urlRegex)
+    
+    // Extract unique urls to render previews below text
+    const matches = content.match(urlRegex) || []
+    const uniqueUrls = Array.from(new Set(matches))
+
+    return (
+      <div className="mb-3">
+        <p className="text-gray-800 whitespace-pre-wrap">
+          {parts.map((part, index) => {
+            if (part.match(urlRegex)) {
+              return (
+                <a
+                  key={index}
+                  href={part}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-pink-500 hover:text-pink-600 hover:underline break-all"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                  }}
+                >
+                  {part}
+                </a>
+              )
+            }
+            return <span key={index}>{part}</span>
+          })}
+        </p>
+
+        {/* Link Previews */}
+        {uniqueUrls.map((url, idx) => (
+          <LinkPreview key={`preview-${idx}`} url={url} />
+        ))}
+      </div>
+    )
+  }
+
   return (
     <div className="bg-white rounded-lg shadow-md p-4 mb-4">
       {/* Author Header */}
@@ -762,7 +806,7 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
         </div>
       ) : (
         <>
-          <p className="text-gray-800 mb-3 whitespace-pre-wrap">{post.content}</p>
+          {renderContentWithLinks(post.content)}
 
           {/* Images - Improved layout */}
           {post.images && Array.isArray(post.images) && post.images.length > 0 ? (
