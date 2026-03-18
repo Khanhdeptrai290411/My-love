@@ -8,6 +8,7 @@ import { User } from '@/models/User'
 import { Couple } from '@/models/Couple'
 
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 export async function GET(
   req: NextRequest,

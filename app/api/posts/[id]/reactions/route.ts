@@ -8,6 +8,7 @@ import { User } from '@/models/User'
 import { Couple } from '@/models/Couple'
 
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 // Get all reactions for a post
 export async function GET(
@@ -58,11 +59,11 @@ export async function GET(
       if (reactionsByType[type]) {
         reactionsByType[type].push({
           id: reaction._id.toString(),
-          userId: (reaction.userId as any)._id.toString(),
+          userId: (reaction.userId as any)?._id?.toString() || 'unknown',
           user: {
-            name: (reaction.userId as any).name,
-            email: (reaction.userId as any).email,
-            image: (reaction.userId as any).image,
+            name: (reaction.userId as any)?.name || 'Người dùng',
+            email: (reaction.userId as any)?.email || '',
+            image: (reaction.userId as any)?.image || null,
           },
           type: reaction.type,
         })
@@ -70,7 +71,7 @@ export async function GET(
     })
 
     // Get current user's reaction
-    const myReaction = reactions.find((r) => (r.userId as any)._id.toString() === user._id.toString())
+    const myReaction = reactions.find((r) => (r.userId as any)?._id?.toString() === user._id.toString())
 
     return NextResponse.json({
       reactions: reactionsByType,
