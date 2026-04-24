@@ -171,7 +171,7 @@ export default function CouplePage() {
           <div className="bg-white rounded-lg shadow-md p-8">
             <h2 className="text-2xl font-semibold mb-4 text-gray-800">Tạo couple mới</h2>
             <p className="text-gray-600 mb-6">
-              Nhập ngày hẹn hò của hai bạn. Mã mời sẽ được tạo từ ngày này.
+              Nhập ngày hẹn hò của hai bạn. Mã mời sẽ được tạo từ ngày này nhé
             </p>
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
