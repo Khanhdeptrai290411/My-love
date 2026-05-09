@@ -56,45 +56,49 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-100 to-purple-100">
-      <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
-        <h1 className="text-3xl font-bold text-center mb-6 text-gray-800">Đăng ký</h1>
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
+      {/* Decorative background elements */}
+      <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-primary/20 rounded-full blur-3xl opacity-50 mix-blend-multiply pointer-events-none"></div>
+      <div className="absolute bottom-[-10%] left-[-10%] w-96 h-96 bg-accent/20 rounded-full blur-3xl opacity-50 mix-blend-multiply pointer-events-none"></div>
+      
+      <div className="glass-card p-8 rounded-2xl shadow-xl w-full max-w-md border border-border/50 relative z-10 backdrop-blur-xl">
+        <h1 className="text-4xl font-extrabold text-center mb-8 text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent drop-shadow-sm">Đăng ký</h1>
         
-        <form onSubmit={handleRegister} className="space-y-4">
+        <form onSubmit={handleRegister} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-bold text-foreground/80 mb-2">
               Tên
             </label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-gray-900 placeholder-gray-400"
+              className="w-full px-4 py-3 border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent text-foreground placeholder-foreground/40 bg-background/50 shadow-inner transition"
               placeholder="Nhập tên của bạn"
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-bold text-foreground/80 mb-2">
               Email
             </label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-gray-900 placeholder-gray-400"
+              className="w-full px-4 py-3 border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent text-foreground placeholder-foreground/40 bg-background/50 shadow-inner transition"
               placeholder="example@email.com"
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-bold text-foreground/80 mb-2">
               Giới tính (có thể cập nhật sau)
             </label>
             <select
               value={gender}
               onChange={(e) => setGender(e.target.value as any)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-gray-900 bg-white"
+              className="w-full px-4 py-3 border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent text-foreground bg-background/50 shadow-inner transition"
             >
               <option value="">Chọn giới tính</option>
               <option value="male">Nam</option>
@@ -103,28 +107,28 @@ export default function RegisterPage() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-bold text-foreground/80 mb-2">
               Mật khẩu
             </label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-gray-900 placeholder-gray-400"
+              className="w-full px-4 py-3 border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent text-foreground placeholder-foreground/40 bg-background/50 shadow-inner transition"
               placeholder="Tối thiểu 6 ký tự"
               required
               minLength={6}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-bold text-foreground/80 mb-2">
               Xác nhận mật khẩu
             </label>
             <input
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-gray-900 placeholder-gray-400"
+              className="w-full px-4 py-3 border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent text-foreground placeholder-foreground/40 bg-background/50 shadow-inner transition"
               placeholder="Nhập lại mật khẩu"
               required
               minLength={6}
@@ -133,17 +137,17 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-pink-500 text-white py-3 rounded-lg font-semibold hover:bg-pink-600 transition disabled:opacity-50"
+            className="w-full bg-primary text-primary-foreground py-3.5 rounded-xl font-bold hover:shadow-[0_0_15px_rgba(244,63,94,0.4)] transition disabled:opacity-50 mt-2"
           >
             {loading ? 'Đang đăng ký...' : 'Đăng ký'}
           </button>
         </form>
 
-        <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600">
+        <div className="mt-8 text-center">
+          <p className="text-sm text-foreground/70 font-medium">
             Đã có tài khoản?{' '}
-            <Link href="/auth/login" className="text-pink-500 hover:text-pink-600 font-semibold">
-              Đăng nhập
+            <Link href="/auth/login" className="text-primary hover:opacity-80 font-bold underline decoration-primary/30 underline-offset-4">
+              Đăng nhập ngay
             </Link>
           </p>
         </div>

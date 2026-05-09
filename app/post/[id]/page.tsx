@@ -8,6 +8,7 @@ import Navbar from '@/components/Navbar'
 import Image from 'next/image'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
+import HeartLoader from '@/components/HeartLoader'
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -51,11 +52,7 @@ export default function PostDetailPage({ params }: { params: { id: string } }) {
   }
 
   if (status === 'loading' || isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-xl text-gray-800">Đang tải...</div>
-      </div>
-    )
+    return <HeartLoader />
   }
 
   if (!postData?.post) {

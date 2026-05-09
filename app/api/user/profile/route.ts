@@ -24,6 +24,12 @@ export async function GET() {
         email: user.email,
         image: user.image,
         gender: user.gender || null,
+        height: user.height || null,
+        weight: user.weight || null,
+        measurements: user.measurements || null,
+        shoeSize: user.shoeSize || null,
+        clothingSize: user.clothingSize || null,
+        ringSize: user.ringSize || null,
       },
     })
   } catch (error: any) {
@@ -42,7 +48,11 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { name, email, gender, image } = await req.json()
+    const { 
+      name, email, gender, image,
+      height, weight, measurements,
+      shoeSize, clothingSize, ringSize
+    } = await req.json()
 
     await connectDB()
 
@@ -67,14 +77,14 @@ export async function PATCH(req: NextRequest) {
     if (name && name.trim()) {
       user.name = name.trim()
     }
-
-    if (gender) {
-      user.gender = gender
-    }
-
-    if (image !== undefined) {
-      user.image = image
-    }
+    if (gender !== undefined) user.gender = gender
+    if (image !== undefined) user.image = image
+    if (height !== undefined) user.height = height
+    if (weight !== undefined) user.weight = weight
+    if (measurements !== undefined) user.measurements = measurements
+    if (shoeSize !== undefined) user.shoeSize = shoeSize
+    if (clothingSize !== undefined) user.clothingSize = clothingSize
+    if (ringSize !== undefined) user.ringSize = ringSize
 
     await user.save()
 
@@ -85,6 +95,12 @@ export async function PATCH(req: NextRequest) {
         email: user.email,
         image: user.image,
         gender: user.gender || null,
+        height: user.height || null,
+        weight: user.weight || null,
+        measurements: user.measurements || null,
+        shoeSize: user.shoeSize || null,
+        clothingSize: user.clothingSize || null,
+        ringSize: user.ringSize || null,
       },
     })
   } catch (error: any) {

@@ -11,6 +11,18 @@ import toast from 'react-hot-toast'
 import { getTodayDate } from '@/lib/utils'
 import PostCard from '@/components/PostCard'
 import LoveCounter from '@/components/LoveCounter'
+import HeartLoader from '@/components/HeartLoader'
+
+const moods = [
+  { value: 'happy', label: 'Vui vẻ', emoji: '😊' },
+  { value: 'sad', label: 'Buồn', emoji: '😢' },
+  { value: 'calm', label: 'Bình yên', emoji: '😌' },
+  { value: 'stressed', label: 'Căng thẳng', emoji: '😣' },
+  { value: 'excited', label: 'Hào hứng', emoji: '🤩' },
+  { value: 'tired', label: 'Mệt mỏi', emoji: '😴' },
+  { value: 'anxious', label: 'Lo lắng', emoji: '😰' },
+  { value: 'grateful', label: 'Biết ơn', emoji: '🙏' },
+]
 
 const fetcher = async (url: string) => {
   const res = await fetch(url)
@@ -39,6 +51,13 @@ export default function HomePage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const cameraInputRef = useRef<HTMLInputElement | null>(null)
 
+  // Mood states
+  const [selectedMood, setSelectedMood] = useState<string>('')
+  const [intensity, setIntensity] = useState(2)
+  const [note, setNote] = useState('')
+  const [savingMood, setSavingMood] = useState(false)
+  const [isEditingMood, setIsEditingMood] = useState(false)
+
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/auth/login')
@@ -46,7 +65,7 @@ export default function HomePage() {
   }, [status, router])
 
   const [postFilter, setPostFilter] = useState<'me' | 'partner' | 'both'>('both')
-  
+
   const { data: couple, isLoading: coupleLoading } = useSWR('/api/couple/me', fetcher)
 
   useEffect(() => {
@@ -54,7 +73,7 @@ export default function HomePage() {
       router.push('/couple')
     }
   }, [coupleLoading, couple, router])
-  const { data: quote, isLoading: quoteLoading } = useSWR('/api/quote/today', fetcher)
+
 
   const [postsSkip, setPostsSkip] = useState(0)
   const [accumulatedPosts, setAccumulatedPosts] = useState<any[]>([])
@@ -75,9 +94,51 @@ export default function HomePage() {
     setAccumulatedPosts([])
   }, [postFilter])
 
-  const { data: moodMatchData } = useSWR('/api/mood-match/today', fetcher, {
+  const { data: moodMatchData, mutate: mutateMoodMatch } = useSWR('/api/mood-match/today', fetcher, {
     refreshInterval: 60000,
   })
+
+  const handleSubmitMood = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedMood) {
+      toast.error('Vui lòng chọn mood')
+      return
+    }
+
+    setSavingMood(true)
+    try {
+      const res = await fetch('/api/moods', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          mood: selectedMood, 
+          intensity, 
+          note, 
+        }),
+      })
+
+      const data = await res.json()
+      if (res.ok) {
+        toast.success('Đã lưu mood!')
+        mutateMoodMatch()
+        setIsEditingMood(false)
+      } else {
+        toast.error(data.error || 'Lỗi khi lưu mood')
+      }
+    } catch (error) {
+      toast.error('Có lỗi xảy ra')
+    } finally {
+      setSavingMood(false)
+    }
+  }
+
+  // Pre-fill mood form if user already has a mood today and clicks Edit
+  useEffect(() => {
+    if (isEditingMood && moodMatchData?.moods?.me) {
+      setSelectedMood(moodMatchData.moods.me.mood)
+      setIntensity(moodMatchData.moods.me.intensity || 2)
+    }
+  }, [isEditingMood, moodMatchData])
 
   // Removed todayPost check - allow multiple posts per day
 
@@ -186,11 +247,7 @@ export default function HomePage() {
   }
 
   if (status === 'loading' || coupleLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-xl text-gray-800">Đang tải...</div>
-      </div>
-    )
+    return <HeartLoader />
   }
 
   if (!couple?.couple) {
@@ -200,39 +257,38 @@ export default function HomePage() {
   const hasPartner = couple.couple.members?.length >= 2
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <Navbar />
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-6 text-gray-800">Trang chủ</h1>
-
+      <div className="max-w-4xl mx-auto px-4 py-8 pb-24">
         {/* Love Counter */}
         {couple?.couple?.startDate && hasPartner ? (
-          <div className="bg-gradient-to-br from-pink-400 via-pink-500 to-purple-500 rounded-2xl shadow-xl mb-6 overflow-hidden relative">
+          <div className="glass-card mb-8 overflow-hidden relative shadow-lg shadow-primary/5">
             {/* Background blur effect */}
-            <div className="absolute inset-0 bg-gradient-to-br from-green-400/20 to-green-600/20 backdrop-blur-sm"></div>
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-accent/10 mix-blend-overlay"></div>
             <LoveCounter
               startDate={couple.couple.startDate}
               member1Name={couple.couple.members?.[0]?.name}
+
               member2Name={couple.couple.members?.[1]?.name}
               member1Image={couple.couple.members?.[0]?.image}
               member2Image={couple.couple.members?.[1]?.image}
             />
           </div>
         ) : !hasPartner ? (
-          <div className="bg-gradient-to-br from-pink-100 to-purple-100 rounded-2xl shadow-xl mb-6 p-8">
+          <div className="glass-card mb-8 p-10 border border-primary/20">
             <div className="text-center">
-              <h2 className="text-2xl font-bold mb-4 text-gray-800">Bạn chưa thiết lập mối quan hệ</h2>
-              <p className="text-gray-600 mb-6">
-                Vui lòng sao chép mã sau để gửi cho người yêu của bạn:
+              <h2 className="text-2xl font-bold mb-4 text-foreground">Bạn chưa thiết lập người ấy</h2>
+              <p className="text-foreground/70 mb-6">
+                Vui lòng sao chép mã sau để gửi cho nửa kia của bạn:
               </p>
-              <div className="bg-white rounded-lg p-4 mb-4 border-2 border-pink-300">
-                <p className="text-3xl font-bold text-pink-600 mb-2">{couple.couple.inviteCode}</p>
+              <div className="bg-background rounded-2xl p-6 mb-6 border border-border shadow-sm inline-block mx-auto min-w-[250px]">
+                <p className="text-4xl font-black text-primary tracking-widest mb-4">{couple.couple.inviteCode}</p>
                 <button
                   onClick={() => {
                     navigator.clipboard.writeText(couple.couple.inviteCode)
                     toast.success('Đã sao chép mã!')
                   }}
-                  className="text-sm text-pink-600 hover:text-pink-700 font-medium"
+                  className="bg-primary/10 text-primary hover:bg-primary/20 px-6 py-2 rounded-xl font-semibold transition"
                 >
                   📋 Sao chép mã
                 </button>
@@ -244,32 +300,131 @@ export default function HomePage() {
           </div>
         ) : null}
 
-        {/* Quote of the Day */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4 text-gray-700">Câu nói hôm nay</h2>
-          {quoteLoading ? (
-            <div className="animate-pulse">
-              <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-            </div>
+        {/* Mood Match Card */}
+        <div className="glass-card mb-8 p-6 md:p-8 relative">
+          <div className="flex items-center justify-between mb-6 border-b border-border pb-4">
+            <h2 className="text-xl md:text-2xl font-semibold text-primary">
+              {moodMatchData?.message || 'Cảm xúc hôm nay'}
+            </h2>
+            {moodMatchData && moodMatchData.status !== 'NONE' && !isEditingMood && (
+              <button
+                onClick={() => setIsEditingMood(true)}
+                className="p-2 bg-secondary/50 hover:bg-secondary rounded-full transition-colors text-primary flex items-center justify-center w-10 h-10 shadow-sm"
+                title="Sửa mood"
+              >
+                ✏️
+              </button>
+            )}
+          </div>
+
+          {(isEditingMood || !moodMatchData || moodMatchData.status === 'NONE' || (moodMatchData.status === 'ONE_SIDED' && !moodMatchData.moods.me)) ? (
+            <form onSubmit={handleSubmitMood} className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-foreground/80 mb-4">
+                  Chọn mood của bạn
+                </label>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {moods.map((mood) => (
+                    <button
+                      key={mood.value}
+                      type="button"
+                      onClick={() => setSelectedMood(mood.value)}
+                      className={`p-4 rounded-xl border transition ${
+                        selectedMood === mood.value
+                          ? 'border-primary bg-primary/10 shadow-[0_0_15px_rgba(244,63,94,0.2)]'
+                          : 'border-border bg-secondary/30 hover:bg-secondary'
+                      }`}
+                    >
+                      <div className="text-4xl mb-3 drop-shadow-sm">{mood.emoji}</div>
+                      <div className="text-sm font-bold text-foreground">{mood.label}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground/80 mb-2">
+                  Cường độ: <span className="text-primary font-bold">{intensity}</span>
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="3"
+                  value={intensity}
+                  onChange={(e) => setIntensity(parseInt(e.target.value))}
+                  className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
+                />
+                <div className="flex justify-between text-xs text-foreground/50 mt-3 font-medium">
+                  <span>Nhẹ</span>
+                  <span>Vừa</span>
+                  <span>Mạnh</span>
+                  <span>Rất mạnh</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground/80 mb-2">
+                  Ghi chú (tùy chọn)
+                </label>
+                <textarea
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  className="w-full px-5 py-4 border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent text-foreground placeholder-foreground/40 bg-background shadow-inner resize-none"
+                  placeholder="Thêm ghi chú về mood của bạn..."
+                  rows={2}
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="submit"
+                  disabled={savingMood || !selectedMood}
+                  className="flex-1 bg-primary text-primary-foreground py-3.5 rounded-xl font-bold hover:opacity-90 shadow-lg shadow-primary/30 transition disabled:opacity-50"
+                >
+                  {savingMood ? 'Đang lưu...' : 'Lưu mood'}
+                </button>
+                {moodMatchData && (moodMatchData.status !== 'NONE' && moodMatchData.moods.me) && (
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingMood(false)}
+                    className="px-6 py-3.5 glass hover:bg-secondary rounded-xl text-foreground font-medium transition"
+                  >
+                    Hủy
+                  </button>
+                )}
+              </div>
+            </form>
           ) : (
-            <p className="text-lg text-gray-600 italic">
-              &quot;{quote?.text || 'Hôm nay em có muốn nói gì với anh không?'}&quot;
-            </p>
+            <div className="py-4 flex flex-col items-center justify-center text-center">
+              <div className="flex justify-center gap-12 mb-6 w-full max-w-sm">
+                {moodMatchData.moods.me && (
+                  <div className="flex flex-col items-center p-4 bg-secondary/20 rounded-2xl border border-border/50 flex-1">
+                    <span className="text-5xl mb-3 drop-shadow-sm">{moods.find(m => m.value === moodMatchData.moods.me.mood)?.emoji}</span>
+                    <span className="text-sm font-bold text-foreground/80">Bạn</span>
+                  </div>
+                )}
+                {moodMatchData.moods.partner && (
+                  <div className="flex flex-col items-center p-4 bg-secondary/20 rounded-2xl border border-border/50 flex-1">
+                    <span className="text-5xl mb-3 drop-shadow-sm">{moods.find(m => m.value === moodMatchData.moods.partner.mood)?.emoji}</span>
+                    <span className="text-sm font-bold text-foreground/80">Người ấy</span>
+                  </div>
+                )}
+              </div>
+            </div>
           )}
         </div>
 
         {/* Write Post Form */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4 text-gray-700">Đăng bài</h2>
-          
-          <form onSubmit={handleSubmitPost} className="space-y-4">
+        <div className="glass-card mb-8 p-6 md:p-8">
+          <h2 className="text-xl font-semibold mb-6 text-primary flex items-center gap-2">✍️ Cập nhật nhật ký</h2>
+
+          <form onSubmit={handleSubmitPost} className="space-y-5">
             <textarea
               value={postContent}
               onChange={(e) => setPostContent(e.target.value)}
               onPaste={handlePasteImages}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent min-h-[120px] text-gray-900 placeholder-gray-400 bg-white resize-none"
-              placeholder="Viết về ngày của bạn..."
+              className="w-full px-5 py-4 border border-border rounded-2xl focus:ring-2 focus:ring-primary focus:border-transparent min-h-[140px] text-foreground placeholder:text-foreground/40 bg-background resize-none shadow-inner"
+              placeholder="Hôm nay của bạn thế nào? Cùng chia sẻ nhé..."
             />
 
             {/* Image Upload Section */}
@@ -371,79 +526,43 @@ export default function HomePage() {
           </form>
         </div>
 
-        {/* Mood Match Card */}
-        {moodMatchData && (
-          <div className="bg-gradient-to-r from-pink-100 to-purple-100 rounded-lg shadow-md p-6 mb-6">
-            <h2 className="text-xl font-semibold mb-2 text-gray-700">Mood match hôm nay</h2>
-            <p className="text-gray-700 mb-4">{moodMatchData.message}</p>
-            <Link
-              href="/mood"
-              className="inline-block bg-pink-500 text-white px-4 py-2 rounded-lg hover:bg-pink-600 transition"
-            >
-              Check-in mood
-            </Link>
-          </div>
-        )}
 
-        {/* Fix Index Button (temporary) */}
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-          <p className="text-sm text-yellow-800 mb-2">
-            ⚠️ Nếu bạn gặp lỗi &quot;duplicate key error&quot;, hãy click nút bên dưới để sửa:
-          </p>
-          <button
-            onClick={async () => {
-              try {
-                const res = await fetch('/api/admin/drop-index', { method: 'POST' })
-                const data = await res.json()
-                if (res.ok) {
-                  toast.success(data.message || 'Đã sửa lỗi! Bây giờ bạn có thể đăng nhiều post trong 1 ngày.')
-                } else {
-                  toast.error(data.error || 'Lỗi khi sửa')
-                }
-              } catch (error) {
-                toast.error('Có lỗi xảy ra')
-              }
-            }}
-            className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition text-sm font-semibold"
-          >
-            🔧 Sửa lỗi duplicate key
-          </button>
-        </div>
+
+
+
+
 
         {/* All Posts */}
         <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-700">Tất cả bài đăng</h2>
-            <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 pb-4 border-b border-border">
+            <h2 className="text-2xl font-semibold text-foreground mb-4 sm:mb-0">Dòng thời gian</h2>
+            <div className="flex gap-2 p-1 bg-secondary rounded-xl">
               <button
                 onClick={() => setPostFilter('both')}
-                className={`px-3 py-1 rounded-lg text-sm font-medium transition ${
-                  postFilter === 'both'
-                    ? 'bg-pink-500 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+                className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition ${postFilter === 'both'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-foreground/60 hover:text-foreground'
+                  }`}
               >
                 Cả hai
               </button>
               <button
                 onClick={() => setPostFilter('me')}
-                className={`px-3 py-1 rounded-lg text-sm font-medium transition ${
-                  postFilter === 'me'
-                    ? 'bg-pink-500 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+                className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition ${postFilter === 'me'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-foreground/60 hover:text-foreground'
+                  }`}
               >
                 Của tôi
               </button>
               <button
                 onClick={() => setPostFilter('partner')}
-                className={`px-3 py-1 rounded-lg text-sm font-medium transition ${
-                  postFilter === 'partner'
-                    ? 'bg-pink-500 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+                className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition ${postFilter === 'partner'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-foreground/60 hover:text-foreground'
+                  }`}
               >
-                Của người ấy
+                Nửa kia
               </button>
             </div>
           </div>
@@ -498,11 +617,11 @@ export default function HomePage() {
           ) : (
             <div className="bg-white rounded-lg shadow-md p-12 text-center">
               <p className="text-gray-500 mb-2">
-                {postFilter === 'partner' 
-                  ? 'Người ấy chưa có bài đăng nào trong tháng này' 
+                {postFilter === 'partner'
+                  ? 'Người ấy chưa có bài đăng nào trong tháng này'
                   : postFilter === 'me'
-                  ? 'Bạn chưa có bài đăng nào trong tháng này'
-                  : 'Chưa có bài đăng nào'}
+                    ? 'Bạn chưa có bài đăng nào trong tháng này'
+                    : 'Chưa có bài đăng nào'}
               </p>
               {postFilter === 'partner' && (
                 <p className="text-sm text-gray-400">

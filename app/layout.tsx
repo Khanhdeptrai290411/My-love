@@ -21,6 +21,9 @@ export const metadata: Metadata = {
     statusBarStyle: 'default',
     title: 'My Love',
   },
+  other: {
+    'mobile-web-app-capable': 'yes',
+  },
 }
 
 export default function RootLayout({
@@ -29,7 +32,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="vi">
+    <html lang="vi" suppressHydrationWarning>
       <body>
         <Providers>
           {children}

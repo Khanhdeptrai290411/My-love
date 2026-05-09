@@ -2,30 +2,86 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #fff5f8;
+    --foreground: #3f2a32;
+    --card: #ffffff;
+    --card-foreground: #3f2a32;
+    --primary: #f43f5e; /* Rose 500 */
+    --primary-foreground: #ffffff;
+    --secondary: #ffe4e6;
+    --secondary-foreground: #be123c;
+    --border: #fecdd3; /* Rose 200 */
+    --glass-bg: rgba(255, 255, 255, 0.4);
+    --glass-border: rgba(255, 255, 255, 0.6);
+  }
+
+  .dark {
+    --background: #120c15;
+    --foreground: #fdf2f8;
+    --card: #1d1425;
+    --card-foreground: #fdf2f8;
+    --primary: #fb7185; /* Rose 400 */
+    --primary-foreground: #ffffff;
+    --secondary: #3b2a45;
+    --secondary-foreground: #fbcfe8;
+    --border: #3b2a45;
+    --glass-bg: rgba(20, 15, 30, 0.5);
+    --glass-border: rgba(255, 255, 255, 0.05);
   }
 }
 
-body {
-  color: #171717;
-  background: #ffffff;
-  font-family: Arial, Helvetica, sans-serif;
-}
-
-/* Force text colors for better visibility */
-input, textarea, select {
-  color: #111827 !important;
+@layer base {
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    transition: background-color 0.5s ease;
+  }
+  
+  ::selection {
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+  }
 }
 
 @layer utilities {
+  .glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid transparent;
+    box-shadow: 
+      0 8px 32px 0 rgba(0, 0, 0, 0.04),
+      inset 0 0 0 1px var(--glass-border),
+      inset 0 1px 2px 0 rgba(255, 255, 255, 0.8);
+  }
+  .dark .glass {
+    box-shadow: 
+      0 8px 32px 0 rgba(0, 0, 0, 0.4),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+      inset 0 1px 2px 0 rgba(255, 255, 255, 0.15);
+  }
+  .glass-card {
+    @apply glass rounded-3xl transition-all duration-300;
+  }
+  .glass-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 
+      0 16px 40px 0 rgba(0, 0, 0, 0.08),
+      inset 0 0 0 1px var(--glass-border),
+      inset 0 1px 2px 0 rgba(255, 255, 255, 1);
+  }
+  .dark .glass-card:hover {
+    box-shadow: 
+      0 16px 40px 0 rgba(0, 0, 0, 0.6),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.12),
+      inset 0 1px 2px 0 rgba(255, 255, 255, 0.25);
+  }
   .text-balance {
     text-wrap: balance;
   }

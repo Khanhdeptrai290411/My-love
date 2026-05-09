@@ -7,6 +7,7 @@ import useSWR from 'swr'
 import Navbar from '@/components/Navbar'
 import toast from 'react-hot-toast'
 import { getTodayDate } from '@/lib/utils'
+import HeartLoader from '@/components/HeartLoader'
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -109,33 +110,29 @@ export default function MoodPage() {
   }
 
   if (status === 'loading') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-xl text-gray-800">Đang tải...</div>
-      </div>
-    )
+    return <HeartLoader />
   }
 
   const myEvents = todayMood?.events?.me || []
   const partnerEvents = todayMood?.events?.partner || []
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <Navbar />
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-6 text-gray-800">
+      <div className="max-w-4xl mx-auto px-4 py-8 pb-24">
+        <h1 className="text-4xl font-bold mb-8 text-foreground flex items-center gap-2">
           Mood hôm nay ({today})
         </h1>
 
         {/* Add/Edit Mood Form */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4 text-gray-700">
+        <div className="glass-card p-6 md:p-8 mb-8">
+          <h2 className="text-2xl font-semibold mb-6 text-primary border-b border-border pb-4">
             {editingEventId ? 'Sửa mood' : 'Thêm mood mới'}
           </h2>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-4">
+              <label className="block text-sm font-medium text-foreground/80 mb-4">
                 Chọn mood của bạn
               </label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -144,22 +141,22 @@ export default function MoodPage() {
                     key={mood.value}
                     type="button"
                     onClick={() => setSelectedMood(mood.value)}
-                    className={`p-4 rounded-lg border-2 transition ${
+                    className={`p-4 rounded-xl border transition ${
                       selectedMood === mood.value
-                        ? 'border-pink-500 bg-pink-50'
-                        : 'border-gray-200 hover:border-gray-300'
+                        ? 'border-primary bg-primary/10 shadow-[0_0_15px_rgba(244,63,94,0.2)]'
+                        : 'border-border bg-secondary/30 hover:bg-secondary'
                     }`}
                   >
-                    <div className="text-3xl mb-2">{mood.emoji}</div>
-                    <div className="text-sm font-medium text-gray-900">{mood.label}</div>
+                    <div className="text-4xl mb-3 drop-shadow-sm">{mood.emoji}</div>
+                    <div className="text-sm font-bold text-foreground">{mood.label}</div>
                   </button>
                 ))}
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Cường độ: {intensity}
+              <label className="block text-sm font-medium text-foreground/80 mb-2">
+                Cường độ: <span className="text-primary font-bold">{intensity}</span>
               </label>
               <input
                 type="range"
@@ -167,9 +164,9 @@ export default function MoodPage() {
                 max="3"
                 value={intensity}
                 onChange={(e) => setIntensity(parseInt(e.target.value))}
-                className="w-full"
+                className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
               />
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
+              <div className="flex justify-between text-xs text-foreground/50 mt-3 font-medium">
                 <span>Nhẹ</span>
                 <span>Vừa</span>
                 <span>Mạnh</span>
@@ -178,23 +175,23 @@ export default function MoodPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-foreground/80 mb-2">
                 Ghi chú (tùy chọn)
               </label>
               <textarea
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-gray-900 placeholder-gray-400 bg-white"
+                className="w-full px-5 py-4 border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent text-foreground placeholder-foreground/40 bg-background shadow-inner resize-none"
                 placeholder="Thêm ghi chú về mood của bạn..."
                 rows={3}
               />
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-3 pt-2">
               <button
                 type="submit"
                 disabled={saving || !selectedMood}
-                className="flex-1 bg-pink-500 text-white py-3 rounded-lg font-semibold hover:bg-pink-600 transition disabled:opacity-50"
+                className="flex-1 bg-primary text-primary-foreground py-3.5 rounded-xl font-bold hover:opacity-90 shadow-lg shadow-primary/30 transition disabled:opacity-50"
               >
                 {saving ? 'Đang lưu...' : editingEventId ? 'Cập nhật mood' : 'Thêm mood'}
               </button>
@@ -202,7 +199,7 @@ export default function MoodPage() {
                 <button
                   type="button"
                   onClick={handleCancelEdit}
-                  className="px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700"
+                  className="px-6 py-3.5 glass hover:bg-secondary rounded-xl text-foreground font-medium transition"
                 >
                   Hủy
                 </button>
@@ -212,27 +209,27 @@ export default function MoodPage() {
         </div>
 
         {/* Mood Events Timeline */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4 text-gray-700">Mood của bạn hôm nay</h2>
+        <div className="glass-card p-6 md:p-8">
+          <h2 className="text-2xl font-semibold mb-6 text-primary flex items-center gap-2">Mood của bạn hôm nay</h2>
           
           {myEvents.length > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {myEvents.map((event: any) => (
-                <div key={event.id} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                  <span className="text-2xl">{moods.find(m => m.value === event.mood)?.emoji}</span>
+                <div key={event.id} className="flex items-start gap-4 p-4 bg-secondary/30 rounded-xl border border-border hover:-translate-y-1 transition-transform">
+                  <span className="text-4xl drop-shadow-sm">{moods.find(m => m.value === event.mood)?.emoji}</span>
                   <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-gray-800">{moodLabels[event.mood]}</span>
-                      <span className="text-sm text-gray-500">(Cường độ: {event.intensity})</span>
-                      <span className="text-xs text-gray-400 ml-auto">{formatTime(event.createdAt)}</span>
+                    <div className="flex items-center flex-wrap md:flex-nowrap gap-3">
+                      <span className="font-bold text-foreground text-lg">{moodLabels[event.mood]}</span>
+                      <span className="text-xs text-foreground/60 font-semibold px-2 py-1 bg-background rounded-md border border-border">Cường độ: {event.intensity}</span>
+                      <span className="text-xs text-foreground/50 ml-auto font-mono mt-1 md:mt-0">{formatTime(event.createdAt)}</span>
                     </div>
                     {event.note && (
-                      <p className="text-sm text-gray-600 mt-1">{event.note}</p>
+                      <p className="text-foreground/80 mt-3 italic border-l-2 border-primary/30 pl-3 leading-relaxed">"{event.note}"</p>
                     )}
                   </div>
                   <button
                     onClick={() => handleEdit(event)}
-                    className="text-pink-500 hover:text-pink-600 text-sm font-semibold"
+                    className="text-primary hover:text-accent text-sm font-bold bg-primary/10 hover:bg-primary/20 px-4 py-2 rounded-lg transition"
                   >
                     Sửa
                   </button>
@@ -240,24 +237,24 @@ export default function MoodPage() {
               ))}
             </div>
           ) : (
-            <p className="text-gray-500 text-center py-4">Chưa có mood nào hôm nay</p>
+            <p className="text-foreground/50 text-center py-6 font-medium">Chưa có mood nào hôm nay</p>
           )}
 
           {partnerEvents.length > 0 && (
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <h3 className="text-lg font-semibold mb-3 text-gray-700">Mood của người ấy</h3>
-              <div className="space-y-3">
+            <div className="mt-8 pt-8 border-t border-border">
+              <h3 className="text-2xl font-semibold mb-6 text-primary flex items-center gap-2">Mood của người ấy</h3>
+              <div className="space-y-4">
                 {partnerEvents.map((event: any) => (
-                  <div key={event.id} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                    <span className="text-2xl">{moods.find(m => m.value === event.mood)?.emoji}</span>
+                  <div key={event.id} className="flex items-start gap-4 p-4 bg-secondary/30 rounded-xl border border-border hover:-translate-y-1 transition-transform">
+                    <span className="text-4xl drop-shadow-sm">{moods.find(m => m.value === event.mood)?.emoji}</span>
                     <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-gray-800">{moodLabels[event.mood]}</span>
-                        <span className="text-sm text-gray-500">(Cường độ: {event.intensity})</span>
-                        <span className="text-xs text-gray-400 ml-auto">{formatTime(event.createdAt)}</span>
+                      <div className="flex items-center flex-wrap md:flex-nowrap gap-3">
+                        <span className="font-bold text-foreground text-lg">{moodLabels[event.mood]}</span>
+                        <span className="text-xs text-foreground/60 font-semibold px-2 py-1 bg-background rounded-md border border-border">Cường độ: {event.intensity}</span>
+                        <span className="text-xs text-foreground/50 ml-auto font-mono mt-1 md:mt-0">{formatTime(event.createdAt)}</span>
                       </div>
                       {event.note && (
-                        <p className="text-sm text-gray-600 mt-1">{event.note}</p>
+                        <p className="text-foreground/80 mt-3 italic border-l-2 border-primary/30 pl-3 leading-relaxed">"{event.note}"</p>
                       )}
                     </div>
                   </div>

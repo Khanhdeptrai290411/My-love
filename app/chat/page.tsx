@@ -7,6 +7,7 @@ import useSWR from 'swr'
 import Navbar from '@/components/Navbar'
 import Image from 'next/image'
 import toast from 'react-hot-toast'
+import HeartLoader from '@/components/HeartLoader'
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -62,7 +63,7 @@ export default function ChatPage() {
     try {
       // Upload all pending images first (song song để tăng tốc độ)
       const imageUrls: string[] = []
-      
+
       const uploadPromises = pendingImages.map(async (pendingImage) => {
         setUploadingImages(prev => ({ ...prev, [pendingImage.id]: true }))
         try {
@@ -89,7 +90,7 @@ export default function ChatPage() {
           })
         }
       })
-      
+
       await Promise.all(uploadPromises)
 
       // Send message(s) - one message per image, or one message with text if no images
@@ -99,16 +100,16 @@ export default function ChatPage() {
           const imageUrl = imageUrls[i]
           const isLastImage = i === imageUrls.length - 1
           const textToSend = isLastImage ? message.trim() : '' // Only add text to last image
-          
+
           const res = await fetch('/api/messages', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              text: textToSend, 
-              imageUrl 
+            body: JSON.stringify({
+              text: textToSend,
+              imageUrl
             }),
           })
-          
+
           if (!res.ok) {
             const data = await res.json()
             toast.error(data.error || 'Gửi tin nhắn thất bại')
@@ -121,7 +122,7 @@ export default function ChatPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ text: message.trim() }),
         })
-        
+
         if (!res.ok) {
           const data = await res.json()
           toast.error(data.error || 'Gửi tin nhắn thất bại')
@@ -141,22 +142,18 @@ export default function ChatPage() {
   }
 
   if (status === 'loading') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-xl text-gray-800">Đang tải...</div>
-      </div>
-    )
+    return <HeartLoader />
   }
 
   const messages = messagesData?.messages || []
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
       <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full px-4 py-4 pb-28">
-        <h1 className="text-3xl font-bold mb-4 text-gray-800">Chat</h1>
+        <h1 className="text-3xl font-bold mb-4 text-foreground">Chat</h1>
 
-        <div className="flex-1 bg-white rounded-lg shadow-md p-4 mb-4 overflow-y-auto">
+        <div className="flex-1 glass-card border border-border p-4 md:p-6 mb-4 overflow-y-auto">
           {messages.length > 0 ? (
             <div className="space-y-4">
               {messages.map((msg: any) => {
@@ -167,11 +164,10 @@ export default function ChatPage() {
                     className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
-                      className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                        isMe
-                          ? 'bg-pink-500 text-white'
-                          : 'bg-gray-200 text-gray-800'
-                      }`}
+                      className={`max-w-xs lg:max-w-md px-5 py-3 rounded-2xl ${isMe
+                          ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20 rounded-tr-sm'
+                          : 'bg-secondary text-foreground rounded-tl-sm'
+                        }`}
                     >
                       {!isMe && (
                         <div className="text-xs font-semibold mb-1">
@@ -201,7 +197,7 @@ export default function ChatPage() {
               <div ref={messagesEndRef} />
             </div>
           ) : (
-            <div className="text-center text-gray-500 py-12">
+            <div className="text-center text-foreground/50 py-12 font-medium">
               Chưa có tin nhắn nào. Bắt đầu trò chuyện!
             </div>
           )}
@@ -212,7 +208,7 @@ export default function ChatPage() {
       {/* Form cố định dưới màn hình để luôn thấy trên mobile */}
       <form
         onSubmit={handleSend}
-        className="fixed bottom-0 left-0 right-0 bg-gray-50 border-t border-gray-200 px-3 sm:px-4 py-2"
+        className="fixed bottom-0 left-0 right-0 glass border-t border-glass-border px-3 sm:px-4 py-3"
         onPaste={(e) => {
           const items = Array.from(e.clipboardData.items)
           items.forEach((item) => {
@@ -229,7 +225,7 @@ export default function ChatPage() {
         <div className="max-w-4xl mx-auto w-full">
           {/* Image Preview */}
           {pendingImages.length > 0 && (
-            <div className="mb-2 p-2 bg-gray-50 rounded-lg border border-gray-200">
+            <div className="mb-3 p-3 bg-background/50 rounded-xl border border-border">
               <div className="flex gap-2 flex-wrap">
                 {pendingImages.map((img) => (
                   <div key={img.id} className="relative group">
@@ -262,7 +258,7 @@ export default function ChatPage() {
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder="Nhập tin nhắn... (có thể dán ảnh Ctrl+V)"
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-gray-900 placeholder-gray-400 bg-white text-sm"
+              className="flex-1 px-4 py-3 border border-border shadow-inner rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent text-foreground placeholder-foreground/50 bg-background text-sm"
             />
 
             <input
@@ -281,7 +277,7 @@ export default function ChatPage() {
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm"
+              className="px-4 py-3 rounded-xl bg-secondary/80 hover:bg-secondary text-foreground transition text-sm flex items-center justify-center font-bold"
               title="Chọn ảnh"
             >
               📷
@@ -290,9 +286,9 @@ export default function ChatPage() {
             <button
               type="submit"
               disabled={sending || (!message.trim() && pendingImages.length === 0)}
-              className="bg-pink-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-pink-600 transition disabled:opacity-50 text-sm"
+              className="bg-primary text-primary-foreground px-6 py-3 rounded-xl font-bold hover:opacity-90 transition disabled:opacity-50 text-sm shadow-md shadow-primary/20"
             >
-              {sending ? 'Đang gửi...' : 'Gửi'}
+              {sending ? '...' : 'Gửi'}
             </button>
           </div>
         </div>

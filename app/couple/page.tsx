@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import useSWR from 'swr'
 import Navbar from '@/components/Navbar'
 import toast from 'react-hot-toast'
+import HeartLoader from '@/components/HeartLoader'
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -103,11 +104,7 @@ export default function CouplePage() {
   }
 
   if (status === 'loading') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-xl text-gray-800">Đang tải...</div>
-      </div>
-    )
+    return <HeartLoader />
   }
 
   return (

@@ -7,6 +7,7 @@ import useSWR from 'swr'
 import Navbar from '@/components/Navbar'
 import Link from 'next/link'
 import { getDaysInYear, getDateKey, getDayOfWeek } from '@/lib/review-utils'
+import HeartLoader from '@/components/HeartLoader'
 
 const fetcher = async (url: string) => {
   const res = await fetch(url)
@@ -42,10 +43,10 @@ const MOOD_LABELS: Record<string, string> = {
 }
 
 const getMoodColor = (mood: string | null, intensity: number) => {
-  if (!mood || intensity === 0) return 'bg-gray-100'
+  if (!mood || intensity === 0) return 'bg-gray-200 dark:bg-gray-800/80'
   const colors = MOOD_COLORS[mood]
-  if (!colors) return 'bg-gray-100'
-  
+  if (!colors) return 'bg-gray-200 dark:bg-gray-800/80'
+
   if (intensity === 1) return colors.light
   if (intensity === 2) return colors.medium
   return colors.dark
@@ -92,7 +93,7 @@ export default function ReviewPage() {
     const dateKey = getDateKey(date)
     const data = normalizedHeatmapData.find((d: any) => d.date === dateKey)
     if (!data) {
-      return view === 'couple' 
+      return view === 'couple'
         ? { me: null, partner: null }
         : { mood: null, intensity: 0 }
     }
@@ -100,11 +101,7 @@ export default function ReviewPage() {
   }
 
   if (status === 'loading') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-xl text-gray-800">Đang tải...</div>
-      </div>
-    )
+    return <HeartLoader />
   }
 
   // Get unique moods for legend
@@ -119,17 +116,17 @@ export default function ReviewPage() {
   })
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <Navbar />
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-6 text-gray-800">Review năm {year}</h1>
+      <div className="max-w-6xl mx-auto px-4 py-8 pb-24">
+        <h1 className="text-4xl font-bold mb-8 text-foreground flex items-center gap-2">Hồi tưởng năm {year}</h1>
 
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <div className="flex flex-wrap items-center gap-4 mb-4">
+        <div className="glass-card p-6 md:p-8 mb-6 border border-border">
+          <div className="flex flex-wrap items-center gap-4 mb-8">
             <select
               value={year}
               onChange={(e) => setYear(parseInt(e.target.value))}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white"
+              className="px-4 py-2.5 border border-border rounded-xl text-foreground font-medium bg-background shadow-inner focus:ring-2 focus:ring-primary focus:outline-none"
             >
               {[2024, 2025, 2026, 2027].map((y) => (
                 <option key={y} value={y}>
@@ -140,7 +137,7 @@ export default function ReviewPage() {
             <select
               value={view}
               onChange={(e) => setView(e.target.value as any)}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white"
+              className="px-4 py-2.5 border border-border rounded-xl text-foreground font-medium bg-background shadow-inner focus:ring-2 focus:ring-primary focus:outline-none"
             >
               <option value="couple">Cả hai</option>
               <option value="me">Của mình</option>
@@ -149,7 +146,13 @@ export default function ReviewPage() {
           </div>
 
           {isLoading ? (
-            <div className="text-center py-12 text-gray-800">Đang tải...</div>
+            <div className="flex flex-col items-center justify-center py-16">
+              <div className="relative w-12 h-12 mb-4">
+                <div className="absolute inset-0 border-4 border-primary/20 rounded-full"></div>
+                <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+              </div>
+              <div className="text-foreground/60 font-medium animate-pulse">Đang thu thập mảnh ký ức...</div>
+            </div>
           ) : heatmapError ? (
             <div className="text-center py-12 text-red-600">
               Lỗi khi tải dữ liệu: {heatmapError.message || 'Unknown error'}
@@ -161,10 +164,10 @@ export default function ReviewPage() {
                   {/* Empty row to match first week row */}
                   <div className="h-3"></div>
                   {['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'].map((day) => (
-                    <div 
-                      key={day} 
-                      className="h-3 text-xs text-gray-500 flex items-start justify-end pr-1"
-                      style={{ 
+                    <div
+                      key={day}
+                      className="h-3 text-xs text-foreground/50 font-medium flex items-start justify-end pr-1"
+                      style={{
                         lineHeight: '12px',
                         height: '12px',
                         minHeight: '12px',
@@ -184,15 +187,15 @@ export default function ReviewPage() {
                       {week.map((day) => {
                         const cellData = getCellData(day)
                         const dateKey = getDateKey(day)
-                        
+
                         if (view === 'couple') {
                           // Split cell: left half = me, right half = partner
-                          const myColor = cellData.me ? getMoodColor(cellData.me.mood, cellData.me.intensity) : 'bg-gray-100'
-                          const partnerColor = cellData.partner ? getMoodColor(cellData.partner.mood, cellData.partner.intensity) : 'bg-gray-100'
-                          
+                          const myColor = cellData.me ? getMoodColor(cellData.me.mood, cellData.me.intensity) : 'bg-gray-200 dark:bg-gray-800/80'
+                          const partnerColor = cellData.partner ? getMoodColor(cellData.partner.mood, cellData.partner.intensity) : 'bg-gray-200 dark:bg-gray-800/80'
+
                           const myLabel = cellData.me && cellData.me.mood ? `${MOOD_LABELS[cellData.me.mood] || cellData.me.mood} (${cellData.me.intensity})` : 'Chưa check-in'
                           const partnerLabel = cellData.partner && cellData.partner.mood ? `${MOOD_LABELS[cellData.partner.mood] || cellData.partner.mood} (${cellData.partner.intensity})` : 'Chưa check-in'
-                          
+
                           return (
                             <Link
                               key={dateKey}
@@ -207,7 +210,7 @@ export default function ReviewPage() {
                             </Link>
                           )
                         }
-                        
+
                         // Single mood view (me or partner)
                         return (
                           <Link
@@ -230,8 +233,8 @@ export default function ReviewPage() {
           )}
 
           {/* Legend */}
-          <div className="mt-6 space-y-2">
-            <div className="text-sm text-gray-800 font-semibold mb-2">Chú thích:</div>
+          <div className="mt-8 pt-8 border-t border-border space-y-2">
+            <div className="text-sm text-foreground/80 font-bold mb-4">Chú thích:</div>
             <div className="flex flex-wrap gap-4">
               {Array.from(uniqueMoods).map((mood) => {
                 const colors = MOOD_COLORS[mood]
@@ -243,16 +246,16 @@ export default function ReviewPage() {
                       <div className={`w-3 h-3 rounded ${colors.medium}`}></div>
                       <div className={`w-3 h-3 rounded ${colors.dark}`}></div>
                     </div>
-                    <span className="text-xs text-gray-600">{MOOD_LABELS[mood] || mood}</span>
+                    <span className="text-xs text-foreground/60 font-medium">{MOOD_LABELS[mood] || mood}</span>
                   </div>
                 )
               })}
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded bg-gray-100"></div>
-                <span className="text-xs text-gray-600">Chưa check-in</span>
+                <div className="w-3 h-3 rounded bg-gray-200 dark:bg-gray-800/80"></div>
+                <span className="text-xs text-foreground/60 font-medium">Chưa check-in</span>
               </div>
             </div>
-            <div className="text-xs text-gray-500 mt-2">
+            <div className="text-xs text-foreground/50 mt-4 font-medium">
               Đậm nhạt theo cường độ (1: nhạt, 2: vừa, 3: đậm)
             </div>
           </div>

@@ -206,19 +206,15 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
   // Always fetch comments to check if there are any
   const { data: commentsData, mutate: mutateComments } = useSWR(
     `/api/posts/${post.id}/comments`,
-    fetcher
+    fetcher,
+    { revalidateOnFocus: false }
   )
 
-  // Fetch reactions - with lightweight polling for near-realtime updates
+  // Fetch reactions
   const { data: reactionsData, mutate: mutateReactions } = useSWR(
     `/api/posts/${post.id}/reactions`,
     fetcher,
-    {
-      // cho cảm giác realtime giữa 2 người
-      refreshInterval: 3000, // 3s
-      revalidateOnFocus: true,
-      revalidateOnReconnect: true,
-    }
+    { revalidateOnFocus: false }
   )
 
   // Auto-show comments if there are any
@@ -636,7 +632,7 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
 
     return (
       <div className="mb-3">
-        <p className="text-gray-800 whitespace-pre-wrap">
+        <p className="text-foreground/90 whitespace-pre-wrap leading-relaxed font-medium">
           {parts.map((part, index) => {
             if (part.match(urlRegex)) {
               return (
@@ -667,7 +663,7 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-4 mb-4">
+    <div className="glass-card mb-6 p-5 sm:p-6 transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-0.5 group">
       {/* Author Header */}
       <div className="flex items-center gap-3 mb-3">
         {post.author?.image ? (
@@ -681,13 +677,13 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
             />
           </div>
         ) : (
-          <div className="w-10 h-10 rounded-full bg-pink-200 flex items-center justify-center text-pink-600 font-semibold">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-primary to-accent flex items-center justify-center text-white font-bold shadow-md">
             {post.author?.name?.charAt(0).toUpperCase() || 'U'}
           </div>
         )}
         <div className="flex-1">
-          <h3 className="font-semibold text-gray-900 text-lg">{post.author?.name || 'Người dùng'}</h3>
-          <p className="text-xs text-gray-500">{formatTime(post.createdAt)}</p>
+          <h3 className="font-semibold text-foreground text-lg">{post.author?.name || 'Người dùng'}</h3>
+          <p className="text-xs text-foreground/60 font-medium">{formatTime(post.createdAt)}</p>
         </div>
         {isMyPost && (
           <div className="flex gap-2">
@@ -714,7 +710,7 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
           <textarea
             value={editContent}
             onChange={(e) => setEditContent(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-gray-900 bg-white"
+            className="w-full px-4 py-3 border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent text-foreground bg-background shadow-inner"
             rows={3}
           />
           
@@ -1104,7 +1100,7 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
 
           {/* Comments Section - Always show if there are comments or if user wants to comment */}
           {(showComments || (commentsData?.comments && commentsData.comments.length > 0)) && (
-            <div className="mt-3 pt-3 border-t border-gray-200">
+            <div className="mt-4 pt-4 border-t border-border">
               {/* Comment List - root + replies */}
               {commentsData?.comments && Array.isArray(commentsData.comments) && commentsData.comments.length > 0 && (() => {
                 const comments = Array.isArray(commentsData.comments) ? commentsData.comments : []
@@ -1137,12 +1133,12 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
                               {comment.user?.name?.charAt(0).toUpperCase() || 'U'}
                             </div>
                           )}
-                          <div className="flex-1 bg-gray-50 rounded-lg p-2">
+                          <div className="flex-1 bg-secondary/40 dark:bg-white/5 rounded-2xl px-3 py-2 border border-border/30">
                             <div className="flex items-center gap-2 mb-1">
-                              <span className="font-semibold text-sm text-gray-900">{comment.user?.name}</span>
-                              <span className="text-xs text-gray-500">{formatTime(comment.createdAt)}</span>
+                              <span className="font-bold text-sm text-foreground">{comment.user?.name}</span>
+                              <span className="text-xs text-foreground/50">{formatTime(comment.createdAt)}</span>
                             </div>
-                            <p className="text-sm text-gray-800 mb-1">{comment.text}</p>
+                            <p className="text-sm text-foreground/90 mb-1 leading-relaxed">{comment.text}</p>
                             <button
                               type="button"
                               onClick={() => {
@@ -1151,7 +1147,7 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
                                   [comment.id]: !prev[comment.id],
                                 }))
                               }}
-                              className="text-xs text-gray-500 hover:text-pink-500 font-medium"
+                              className="text-xs text-foreground/60 hover:text-primary font-bold ml-1 transition"
                             >
                               Trả lời
                             </button>
@@ -1178,12 +1174,12 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
                                     {reply.user?.name?.charAt(0).toUpperCase() || 'U'}
                                   </div>
                                 )}
-                                <div className="flex-1 bg-white rounded-lg p-2 border border-gray-100">
+                                <div className="flex-1 bg-secondary/40 dark:bg-white/5 rounded-2xl px-3 py-2 border border-border/30">
                                   <div className="flex items-center gap-2 mb-1">
-                                    <span className="font-semibold text-xs text-gray-900">{reply.user?.name}</span>
-                                    <span className="text-[10px] text-gray-500">{formatTime(reply.createdAt)}</span>
+                                    <span className="font-bold text-xs text-foreground">{reply.user?.name}</span>
+                                    <span className="text-[10px] text-foreground/50">{formatTime(reply.createdAt)}</span>
                                   </div>
-                                  <p className="text-xs text-gray-800">{reply.text}</p>
+                                  <p className="text-xs text-foreground/90 leading-relaxed">{reply.text}</p>
                                 </div>
                               </div>
                             ))}
@@ -1201,13 +1197,13 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
                                   setReplyTexts((prev) => ({ ...prev, [comment.id]: e.target.value }))
                                 }
                                 placeholder="Trả lời bình luận..."
-                                className="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-gray-900 placeholder-gray-400 bg-white text-xs"
+                                className="flex-1 px-4 py-2 border border-border shadow-inner rounded-full focus:ring-2 focus:ring-primary focus:border-transparent text-foreground placeholder-foreground/50 bg-background/50 text-xs"
                               />
                               <button
                                 type="button"
                                 disabled={isCommenting || !(replyTexts[comment.id] || '').trim()}
                                 onClick={() => handleReplySubmit(comment.id)}
-                                className="bg-pink-500 text-white px-3 py-1.5 rounded-lg hover:bg-pink-600 transition disabled:opacity-50 text-xs font-semibold"
+                                className="bg-primary text-primary-foreground px-4 py-2 rounded-full hover:bg-primary/90 transition disabled:opacity-50 text-xs font-bold"
                               >
                                 Gửi
                               </button>
@@ -1227,12 +1223,12 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
                   placeholder="Viết bình luận..."
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-gray-900 placeholder-gray-400 bg-white text-sm"
+                  className="flex-1 px-4 py-2 border border-border shadow-inner rounded-full focus:ring-2 focus:ring-primary focus:border-transparent text-foreground placeholder-foreground/50 bg-background/50 text-sm"
                 />
                 <button
                   type="submit"
                   disabled={isCommenting || !commentText.trim()}
-                  className="bg-pink-500 text-white px-4 py-2 rounded-lg hover:bg-pink-600 transition disabled:opacity-50 text-sm font-semibold"
+                  className="bg-primary text-primary-foreground px-5 py-2 rounded-full hover:bg-primary/90 transition disabled:opacity-50 text-sm font-bold"
                 >
                   {isCommenting ? '...' : 'Gửi'}
                 </button>
