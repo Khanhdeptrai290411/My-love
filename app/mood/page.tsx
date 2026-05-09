@@ -224,7 +224,7 @@ export default function MoodPage() {
                       <span className="text-xs text-foreground/50 ml-auto font-mono mt-1 md:mt-0">{formatTime(event.createdAt)}</span>
                     </div>
                     {event.note && (
-                      <p className="text-foreground/80 mt-3 italic border-l-2 border-primary/30 pl-3 leading-relaxed">"{event.note}"</p>
+                      <p className="text-foreground/80 mt-3 italic border-l-2 border-primary/30 pl-3 leading-relaxed">&quot;{event.note}&quot;</p>
                     )}
                   </div>
                   <button
@@ -254,7 +254,7 @@ export default function MoodPage() {
                         <span className="text-xs text-foreground/50 ml-auto font-mono mt-1 md:mt-0">{formatTime(event.createdAt)}</span>
                       </div>
                       {event.note && (
-                        <p className="text-foreground/80 mt-3 italic border-l-2 border-primary/30 pl-3 leading-relaxed">"{event.note}"</p>
+                        <p className="text-foreground/80 mt-3 italic border-l-2 border-primary/30 pl-3 leading-relaxed">&quot;{event.note}&quot;</p>
                       )}
                     </div>
                   </div>
