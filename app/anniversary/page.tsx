@@ -184,7 +184,7 @@ export default function AnniversaryPage() {
                       <span className="px-2 py-1 rounded-md bg-secondary text-primary text-xs font-bold font-mono">{formatDiff()}</span>
                     </div>
                     {event.description && (
-                      <p className="text-foreground/80 leading-relaxed italic border-l-2 border-primary/30 pl-3 py-1">"{event.description}"</p>
+                      <p className="text-foreground/80 leading-relaxed italic border-l-2 border-primary/30 pl-3 py-1">&quot;{event.description}&quot;</p>
                     )}
                   </div>
                 </div>
