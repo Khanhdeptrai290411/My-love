@@ -30,6 +30,7 @@ export async function GET() {
         shoeSize: user.shoeSize || null,
         clothingSize: user.clothingSize || null,
         ringSize: user.ringSize || null,
+        personalNote: user.personalNote || null,
       },
     })
   } catch (error: any) {
@@ -51,7 +52,7 @@ export async function PATCH(req: NextRequest) {
     const { 
       name, email, gender, image,
       height, weight, measurements,
-      shoeSize, clothingSize, ringSize
+      shoeSize, clothingSize, ringSize, personalNote
     } = await req.json()
 
     await connectDB()
@@ -85,6 +86,7 @@ export async function PATCH(req: NextRequest) {
     if (shoeSize !== undefined) user.shoeSize = shoeSize
     if (clothingSize !== undefined) user.clothingSize = clothingSize
     if (ringSize !== undefined) user.ringSize = ringSize
+    if (personalNote !== undefined) user.personalNote = personalNote
 
     await user.save()
 
@@ -101,6 +103,7 @@ export async function PATCH(req: NextRequest) {
         shoeSize: user.shoeSize || null,
         clothingSize: user.clothingSize || null,
         ringSize: user.ringSize || null,
+        personalNote: user.personalNote || null,
       },
     })
   } catch (error: any) {

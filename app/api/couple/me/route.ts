@@ -30,7 +30,7 @@ export async function GET() {
     }
 
     const members = await User.find({ _id: { $in: couple.memberIds } })
-      .select('name email image gender height weight shoeSize clothingSize ringSize measurements')
+      .select('name email image gender height weight shoeSize clothingSize ringSize measurements personalNote')
 
     // Determine creator (first member)
     const creatorId = couple.memberIds[0].toString()
@@ -57,6 +57,7 @@ export async function GET() {
           clothingSize: m.clothingSize,
           ringSize: m.ringSize,
           measurements: m.measurements,
+          personalNote: m.personalNote,
         })),
       },
     })
@@ -81,7 +82,7 @@ export async function GET() {
           return NextResponse.json({ couple: null })
         }
         const members = await User.find({ _id: { $in: couple.memberIds } })
-          .select('name email image gender height weight shoeSize clothingSize ringSize measurements')
+          .select('name email image gender height weight shoeSize clothingSize ringSize measurements personalNote')
         const creatorId = couple.memberIds[0].toString()
         return NextResponse.json({
           couple: {
@@ -101,6 +102,7 @@ export async function GET() {
               clothingSize: m.clothingSize,
               ringSize: m.ringSize,
               measurements: m.measurements,
+              personalNote: m.personalNote,
             })),
           },
         })
