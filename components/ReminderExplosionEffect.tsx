@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useMemo } from 'react'
 import { useSession } from 'next-auth/react'
 import useSWR from 'swr'
 import { Bell, X, Calendar } from 'lucide-react'
@@ -8,43 +8,52 @@ import { format } from 'date-fns'
 
 const fetcher = (url: string) => fetch(url).then(res => res.json())
 
+const isDateInRange = (currentDate: Date, startDateStr: string, endDateStr: string) => {
+  const today = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate())
+  
+  const startD = new Date(startDateStr)
+  const endD = new Date(endDateStr)
+  
+  const start = new Date(startD.getFullYear(), startD.getMonth(), startD.getDate())
+  const end = new Date(endD.getFullYear(), endD.getMonth(), endD.getDate())
+  
+  return today.getTime() >= start.getTime() && today.getTime() <= end.getTime()
+}
+
 export default function ReminderExplosionEffect() {
   const { data: session } = useSession()
   const { data } = useSWR(session ? '/api/reminders' : null, fetcher)
   
-  const [activeReminders, setActiveReminders] = useState<any[]>([])
   const [showExplosion, setShowExplosion] = useState(false)
   const [showPopup, setShowPopup] = useState(false)
+  const hasInitialized = useRef(false)
   
+  const activeReminders = useMemo(() => {
+    if (!data?.reminders) return []
+    const now = new Date()
+    return data.reminders.filter((r: any) => {
+      if (!r.isActive) return false
+      return isDateInRange(now, r.startDate, r.endDate)
+    })
+  }, [data?.reminders])
+
   // Draggable state
   const [position, setPosition] = useState({ x: 0, y: 0 })
   const [isDragging, setIsDragging] = useState(false)
   const bellRef = useRef<HTMLDivElement>(null)
   const dragStartPos = useRef({ x: 0, y: 0 })
-  const hasMoved = useRef(false) // To distinguish between click and drag
+  const hasMoved = useRef(false)
 
   useEffect(() => {
-    if (!data?.reminders) return
-
-    const now = new Date()
+    if (!data?.reminders || hasInitialized.current) return
     
-    // Find active reminders for today
-    const currentActives = data.reminders.filter((r: any) => {
-      if (!r.isActive) return false
-      const start = new Date(r.startDate)
-      const end = new Date(r.endDate)
-      return now >= start && now <= end
-    })
-
-    setActiveReminders(currentActives)
-
-    // Trigger explosion and popup on load if there are active reminders
-    if (currentActives.length > 0) {
+    hasInitialized.current = true
+    if (activeReminders.length > 0) {
       setShowExplosion(true)
       setShowPopup(true)
       setTimeout(() => setShowExplosion(false), 4500)
     }
-  }, [data])
+  }, [data, activeReminders.length])
 
   useEffect(() => {
     // Load saved position
@@ -219,7 +228,7 @@ export default function ReminderExplosionEffect() {
                       <p className="text-foreground/80 italic mb-3">&quot;{r.content}&quot;</p>
                       <div className="flex items-center gap-1.5 text-xs font-semibold text-primary/80 bg-primary/10 w-fit px-2 py-1 rounded-md">
                         <Calendar size={14} /> 
-                        {format(new Date(r.startDate), 'dd/MM')} - {format(new Date(r.endDate), 'dd/MM')}
+                        {format(new Date(r.startDate), 'dd/MM HH:mm')} - {format(new Date(r.endDate), 'dd/MM HH:mm')}
                       </div>
                     </div>
                   </div>

@@ -10,6 +10,13 @@ import { vi } from 'date-fns/locale'
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 const EMOJIS = ['💖', '🌸', '🎁', '🎂', '🥰', '✨', '💌', '😘', '🎉', '🌟', '🔔', '🌹']
 
+const formatDateTimeLocal = (dateStr: string) => {
+  if (!dateStr) return ''
+  const d = new Date(dateStr)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
 export default function ReminderTab() {
   const { data, mutate } = useSWR('/api/reminders', fetcher)
   const [isAdding, setIsAdding] = useState(false)
@@ -30,8 +37,8 @@ export default function ReminderTab() {
       id: r._id,
       title: r.title,
       content: r.content,
-      startDate: new Date(r.startDate).toISOString().slice(0, 16), // datetime-local format
-      endDate: new Date(r.endDate).toISOString().slice(0, 16),
+      startDate: formatDateTimeLocal(r.startDate),
+      endDate: formatDateTimeLocal(r.endDate),
       icon: r.icon,
       isActive: r.isActive
     })
@@ -220,7 +227,7 @@ export default function ReminderTab() {
                 <div>
                   <h4 className="font-bold text-foreground text-lg line-clamp-1">{r.title}</h4>
                   <div className="flex items-center gap-2 text-xs text-foreground/60">
-                    <span className="flex items-center gap-1"><Calendar size={12}/> {format(new Date(r.startDate), 'dd/MM')} - {format(new Date(r.endDate), 'dd/MM')}</span>
+                    <span className="flex items-center gap-1"><Calendar size={12}/> {format(new Date(r.startDate), 'dd/MM HH:mm')} - {format(new Date(r.endDate), 'dd/MM HH:mm')}</span>
                   </div>
                 </div>
               </div>
