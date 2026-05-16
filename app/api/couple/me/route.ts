@@ -44,6 +44,7 @@ export async function GET() {
         id: couple._id.toString(),
         inviteCode: couple.inviteCode,
         startDate: couple.startDate || null, // Explicitly return null if undefined
+        cycleSettings: couple.cycleSettings || null,
         creatorId,
         members: members.map(m => ({
           id: m._id.toString(),
@@ -89,6 +90,7 @@ export async function GET() {
             id: couple._id.toString(),
             inviteCode: couple.inviteCode,
             startDate: couple.startDate || null,
+            cycleSettings: couple.cycleSettings || null,
             creatorId,
             members: members.map((m: any) => ({
               id: m._id.toString(),

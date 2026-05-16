@@ -18,7 +18,7 @@ export async function GET() {
     }
 
     await connectDB()
-    const user = await User.findOne({ email: session.user.email }).select('_id')
+    const user = await User.findOne({ email: session.user.email }).select('_id gender')
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
@@ -55,9 +55,14 @@ export async function GET() {
     const partnerMood = partnerEvents.length > 0 ? partnerEvents[0] : null
 
     if (!myMood && !partnerMood) {
+      const partner = partnerId
+        ? await User.findById(partnerId).select('name gender').lean()
+        : null
       return NextResponse.json({
         status: 'NONE',
         message: 'Hôm nay tụi mình chưa check-in mood',
+        partnerGender: partner?.gender || 'unknown',
+        myGender: user.gender || 'unknown',
         moods: {
           me: null,
           partner: null,
@@ -67,13 +72,15 @@ export async function GET() {
 
     if (!myMood || !partnerMood) {
       const partner = partnerId
-        ? await User.findById(partnerId).select('name').lean()
+        ? await User.findById(partnerId).select('name gender').lean()
         : null
       return NextResponse.json({
         status: 'ONE_SIDED',
         message: myMood
           ? 'Bạn đã check-in, người ấy thì chưa'
           : 'Người ấy đã check-in, bạn thì chưa',
+        partnerGender: partner?.gender || 'unknown',
+        myGender: user.gender || 'unknown',
         moods: {
           me: myMood
             ? {
@@ -92,15 +99,21 @@ export async function GET() {
     }
 
     const partnerDoc = partnerId
-      ? await User.findById(partnerId).select('name').lean()
+      ? await User.findById(partnerId).select('name gender').lean()
       : null
     const partnerName = partnerDoc && typeof partnerDoc === 'object' && 'name' in partnerDoc
       ? String(partnerDoc.name)
       : 'người ấy'
+    
+    const partnerGender = partnerDoc?.gender || 'unknown'
+    const myGender = user.gender || 'unknown'
+
     if (myMood.mood === partnerMood.mood) {
       return NextResponse.json({
         status: 'MATCH',
         message: `Hôm nay hai bạn cùng mood: ${getMoodEmoji(myMood.mood)} ${myMood.mood}`,
+        partnerGender,
+        myGender,
         moods: {
           me: {
             mood: myMood.mood,
@@ -116,6 +129,8 @@ export async function GET() {
       return NextResponse.json({
         status: 'MISMATCH',
         message: `Hôm nay mood khác nhau: bạn ${getMoodEmoji(myMood.mood)} ${myMood.mood} — ${partnerName} ${getMoodEmoji(partnerMood.mood)} ${partnerMood.mood}`,
+        partnerGender,
+        myGender,
         moods: {
           me: {
             mood: myMood.mood,

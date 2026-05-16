@@ -6,7 +6,7 @@ export interface IMoodEvent {
   userId: mongoose.Types.ObjectId
   date: string // YYYY-MM-DD
   mood: 'happy' | 'sad' | 'calm' | 'stressed' | 'excited' | 'tired' | 'anxious' | 'grateful'
-  intensity: number // 0-3
+  intensity: number // 1-4
   note?: string
   createdAt: Date
 }
@@ -20,7 +20,7 @@ const MoodEventSchema = new Schema<IMoodEvent>({
     enum: ['happy', 'sad', 'calm', 'stressed', 'excited', 'tired', 'anxious', 'grateful'],
     required: true,
   },
-  intensity: { type: Number, required: true, min: 0, max: 3 },
+  intensity: { type: Number, required: true, min: 0, max: 4 },
   note: String,
   createdAt: { type: Date, default: Date.now },
 })

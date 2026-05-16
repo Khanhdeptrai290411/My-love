@@ -37,6 +37,7 @@ export default function Navbar() {
     { href: '/review', label: 'Review' },
     { href: '/stars', label: 'Khoảnh khắc' },
     { href: '/anniversary', label: 'Kỷ niệm' },
+    { href: '/cycle', label: 'Chu kỳ' },
     { href: '/settings', label: 'Cài đặt' },
   ]
 

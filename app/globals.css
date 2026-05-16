@@ -8,17 +8,17 @@
 
 @layer base {
   :root {
-    --background: #fff5f8;
-    --foreground: #3f2a32;
-    --card: #ffffff;
-    --card-foreground: #3f2a32;
+    --background: #fff1f4;
+    --foreground: #2b1b24;
+    --card: #fffafb;
+    --card-foreground: #2b1b24;
     --primary: #f43f5e; /* Rose 500 */
     --primary-foreground: #ffffff;
     --secondary: #ffe4e6;
     --secondary-foreground: #be123c;
-    --border: #fecdd3; /* Rose 200 */
-    --glass-bg: rgba(255, 255, 255, 0.4);
-    --glass-border: rgba(255, 255, 255, 0.6);
+    --border: #f8c7d8;
+    --glass-bg: rgba(255, 255, 255, 0.72);
+    --glass-border: rgba(244, 114, 182, 0.22);
   }
 
   .dark {

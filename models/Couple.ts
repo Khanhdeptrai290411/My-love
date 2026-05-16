@@ -5,6 +5,12 @@ export interface ICouple {
   memberIds: string[]
   inviteCode: string
   startDate: string // YYYY-MM-DD - Ngày hẹn hò
+  cycleSettings?: {
+    lastPeriodStart?: string
+    periodLength?: number
+    cycleLength?: number
+    updatedAt?: Date
+  }
   createdAt: Date
 }
 
@@ -12,6 +18,12 @@ const CoupleSchema = new Schema<ICouple>({
   memberIds: [{ type: Schema.Types.ObjectId as any, ref: 'User', required: true }],
   inviteCode: { type: String, required: true, unique: true },
   startDate: { type: String, required: false }, // Ngày hẹn hò - optional để tương thích với document cũ
+  cycleSettings: {
+    lastPeriodStart: String,
+    periodLength: Number,
+    cycleLength: Number,
+    updatedAt: Date
+  },
   createdAt: { type: Date, default: Date.now },
 })
 

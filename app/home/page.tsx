@@ -12,6 +12,8 @@ import { getTodayDate } from '@/lib/utils'
 import PostCard from '@/components/PostCard'
 import LoveCounter from '@/components/LoveCounter'
 import HeartLoader from '@/components/HeartLoader'
+import CoupleStreak from '@/components/home/CoupleStreak'
+import PartnerEmotionForecastCard from '@/components/home/PartnerEmotionForecastCard'
 
 const moods = [
   { value: 'happy', label: 'Vui vẻ', emoji: '😊' },
@@ -273,6 +275,9 @@ export default function HomePage() {
               member1Image={couple.couple.members?.[0]?.image}
               member2Image={couple.couple.members?.[1]?.image}
             />
+            <div className="relative z-10 pb-8">
+              <CoupleStreak />
+            </div>
           </div>
         ) : !hasPartner ? (
           <div className="glass-card mb-8 p-10 border border-primary/20">
@@ -300,8 +305,17 @@ export default function HomePage() {
           </div>
         ) : null}
 
+        {/* Forecast Card */}
+        <PartnerEmotionForecastCard 
+          moodData={moodMatchData} 
+          onCheckInClick={() => {
+            setIsEditingMood(true)
+            window.scrollTo({ top: document.getElementById('mood-checkin-section')?.offsetTop, behavior: 'smooth' })
+          }} 
+        />
+
         {/* Mood Match Card */}
-        <div className="glass-card mb-8 p-6 md:p-8 relative">
+        <div id="mood-checkin-section" className="glass-card mb-8 p-6 md:p-8 relative">
           <div className="flex items-center justify-between mb-6 border-b border-border pb-4">
             <h2 className="text-xl md:text-2xl font-semibold text-primary">
               {moodMatchData?.message || 'Cảm xúc hôm nay'}
@@ -348,8 +362,8 @@ export default function HomePage() {
                 </label>
                 <input
                   type="range"
-                  min="0"
-                  max="3"
+                  min="1"
+                  max="4"
                   value={intensity}
                   onChange={(e) => setIntensity(parseInt(e.target.value))}
                   className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"

@@ -35,13 +35,18 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'No couple found' }, { status: 404 })
     }
 
+    // Get partner info early to determine gender
+    const partnerId = couple.memberIds.find((id: any) => id.toString() !== user._id.toString())
+    const partner = partnerId ? await User.findById(partnerId) : null
+    const partnerGender = partner?.gender || 'unknown'
+
     // Get quote
     let quote = await DailyQuote.findOne({
       coupleId: couple._id,
       date,
     })
     if (!quote) {
-      const fallbackText = getFallbackQuote(date, couple._id.toString())
+      const fallbackText = getFallbackQuote(date, couple._id.toString(), partnerGender)
       quote = {
         text: fallbackText,
         source: 'fallback' as const,
@@ -50,7 +55,6 @@ export async function GET(req: NextRequest) {
     }
 
     // Get mood events
-    const partnerId = couple.memberIds.find((id: any) => id.toString() !== user._id.toString())
     
     const myMoodEvents = await MoodEvent.find({
       userId: user._id,
@@ -87,8 +91,6 @@ export async function GET(req: NextRequest) {
 
     const myPosts = posts.filter(p => p.authorId.toString() === user._id.toString())
     const partnerPosts = posts.filter(p => p.authorId.toString() !== user._id.toString())
-
-    const partner = partnerId ? await User.findById(partnerId) : null
 
     return NextResponse.json({
       date,
