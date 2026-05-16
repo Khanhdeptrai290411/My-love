@@ -11,7 +11,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const { title, content, startDate, endDate, icon, isActive } = await req.json()
+    const { title, content, startDate, endDate, remindStartTime, remindEndTime, timezone, icon, isActive } = await req.json()
     await connectDB()
     const user = await User.findOne({ email: session.user.email })
     const couple = await Couple.findOne({ memberIds: user._id })
@@ -22,8 +22,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
     if (title !== undefined) reminder.title = title
     if (content !== undefined) reminder.content = content
-    if (startDate !== undefined) reminder.startDate = new Date(startDate)
-    if (endDate !== undefined) reminder.endDate = new Date(endDate)
+    if (startDate !== undefined) reminder.startDate = startDate
+    if (endDate !== undefined) reminder.endDate = endDate
+    if (remindStartTime !== undefined) reminder.remindStartTime = remindStartTime
+    if (remindEndTime !== undefined) reminder.remindEndTime = remindEndTime
+    if (timezone !== undefined) reminder.timezone = timezone
     if (icon !== undefined) reminder.icon = icon
     if (isActive !== undefined) reminder.isActive = isActive
 

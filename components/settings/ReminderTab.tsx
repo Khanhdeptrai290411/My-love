@@ -4,17 +4,14 @@ import { useState } from 'react'
 import useSWR from 'swr'
 import toast from 'react-hot-toast'
 import { Plus, Save, X as XIcon, Edit2, Trash2, Calendar, Clock, Sparkles } from 'lucide-react'
-import { format } from 'date-fns'
-import { vi } from 'date-fns/locale'
+import DateInput, { formatDateForDisplay } from '@/components/DateInput'
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 const EMOJIS = ['💖', '🌸', '🎁', '🎂', '🥰', '✨', '💌', '😘', '🎉', '🌟', '🔔', '🌹']
 
 const formatDateTimeLocal = (dateStr: string) => {
-  if (!dateStr) return ''
-  const d = new Date(dateStr)
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+  // Not needed anymore since we separate date and time
+  return dateStr
 }
 
 export default function ReminderTab() {
@@ -28,6 +25,8 @@ export default function ReminderTab() {
     content: '',
     startDate: '',
     endDate: '',
+    remindStartTime: '08:00',
+    remindEndTime: '20:00',
     icon: '✨',
     isActive: true
   })
@@ -37,8 +36,10 @@ export default function ReminderTab() {
       id: r._id,
       title: r.title,
       content: r.content,
-      startDate: formatDateTimeLocal(r.startDate),
-      endDate: formatDateTimeLocal(r.endDate),
+      startDate: r.startDate,
+      endDate: r.endDate,
+      remindStartTime: r.remindStartTime || '08:00',
+      remindEndTime: r.remindEndTime || '20:00',
       icon: r.icon,
       isActive: r.isActive
     })
@@ -107,7 +108,7 @@ export default function ReminderTab() {
         {!isAdding && (
           <button
             onClick={() => {
-              setForm({ id: '', title: '', content: '', startDate: '', endDate: '', icon: '✨', isActive: true })
+              setForm({ id: '', title: '', content: '', startDate: '', endDate: '', remindStartTime: '08:00', remindEndTime: '20:00', icon: '✨', isActive: true })
               setIsAdding(true)
             }}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg transition-colors font-semibold text-sm"
@@ -149,22 +150,40 @@ export default function ReminderTab() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground/80">Bắt đầu từ</label>
+                <label className="text-sm font-medium text-foreground/80">Ngày bắt đầu</label>
+                <DateInput
+                  required
+                  value={form.startDate}
+                  onChange={val => setForm({...form, startDate: val})}
+                  className="w-full bg-background border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground/80">Ngày kết thúc</label>
+                <DateInput
+                  required
+                  value={form.endDate}
+                  onChange={val => setForm({...form, endDate: val})}
+                  className="w-full bg-background border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground/80">Giờ bắt đầu nhắc mỗi ngày</label>
                 <input
                   required
-                  type="datetime-local"
-                  value={form.startDate}
-                  onChange={e => setForm({...form, startDate: e.target.value})}
+                  type="time"
+                  value={form.remindStartTime}
+                  onChange={e => setForm({...form, remindStartTime: e.target.value})}
                   className="w-full bg-background border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 [color-scheme:dark]"
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground/80">Kết thúc vào</label>
+                <label className="text-sm font-medium text-foreground/80">Giờ kết thúc nhắc mỗi ngày</label>
                 <input
                   required
-                  type="datetime-local"
-                  value={form.endDate}
-                  onChange={e => setForm({...form, endDate: e.target.value})}
+                  type="time"
+                  value={form.remindEndTime}
+                  onChange={e => setForm({...form, remindEndTime: e.target.value})}
                   className="w-full bg-background border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 [color-scheme:dark]"
                 />
               </div>
@@ -227,7 +246,8 @@ export default function ReminderTab() {
                 <div>
                   <h4 className="font-bold text-foreground text-lg line-clamp-1">{r.title}</h4>
                   <div className="flex items-center gap-2 text-xs text-foreground/60">
-                    <span className="flex items-center gap-1"><Calendar size={12}/> {format(new Date(r.startDate), 'dd/MM HH:mm')} - {format(new Date(r.endDate), 'dd/MM HH:mm')}</span>
+                    <span className="flex items-center gap-1"><Calendar size={12}/> {formatDateForDisplay(r.startDate)} - {formatDateForDisplay(r.endDate)}</span>
+                    <span className="flex items-center gap-1"><Clock size={12}/> Mỗi ngày {r.remindStartTime} - {r.remindEndTime}</span>
                   </div>
                 </div>
               </div>

@@ -12,6 +12,7 @@ import { Edit2, LogOut, Copy, Heart } from 'lucide-react'
 import HeartLoader from '@/components/HeartLoader'
 import ProfileTabs from '@/components/settings/ProfileTabs'
 import NotificationSettings from '@/components/settings/NotificationSettings'
+import DateInput, { formatDateForDisplay } from '@/components/DateInput'
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -103,22 +104,24 @@ export default function SettingsPage() {
               <div className="bg-secondary/40 p-5 rounded-2xl border border-border">
                 <label className="block text-sm font-medium text-foreground/70 mb-3">Ngày bắt đầu</label>
                 {isEditingDate && isCreator ? (
-                  <form onSubmit={handleUpdateStartDate} className="flex gap-2">
-                    <input
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      max={new Date().toISOString().split('T')[0]}
-                      className="flex-1 px-4 py-2 border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground [color-scheme:dark]"
-                      required
-                    />
-                    <button type="submit" disabled={saving} className="bg-primary text-white px-4 py-2 rounded-xl font-bold hover:opacity-90 transition">Lưu</button>
-                    <button type="button" onClick={() => setIsEditingDate(false)} className="px-4 py-2 bg-secondary text-foreground rounded-xl font-medium">Hủy</button>
+                  <form onSubmit={handleUpdateStartDate} className="flex flex-wrap gap-2">
+                    <div className="flex-1 min-w-[200px]">
+                      <DateInput
+                        value={startDate}
+                        onChange={setStartDate}
+                        required
+                        className="bg-background text-foreground"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <button type="submit" disabled={saving} className="bg-primary text-white px-4 py-2 rounded-xl font-bold hover:opacity-90 transition h-[46px]">Lưu</button>
+                      <button type="button" onClick={() => setIsEditingDate(false)} className="px-4 py-2 bg-secondary text-foreground rounded-xl font-medium h-[46px]">Hủy</button>
+                    </div>
                   </form>
                 ) : (
                   <div className="flex items-center gap-3">
                     <p className="text-xl font-bold text-foreground">
-                      {coupleData.couple.startDate ? format(new Date(coupleData.couple.startDate), 'dd/MM/yyyy') : 'Chưa thiết lập'}
+                      {coupleData.couple.startDate ? formatDateForDisplay(coupleData.couple.startDate) : 'Chưa thiết lập'}
                     </p>
                     {isCreator ? (
                       <button onClick={() => setIsEditingDate(true)} className="text-primary hover:bg-secondary p-2 rounded-lg transition"><Edit2 size={16} /></button>

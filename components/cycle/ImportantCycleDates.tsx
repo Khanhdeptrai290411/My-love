@@ -1,6 +1,6 @@
-'use client'
 import { CycleSettings, getNextPeriodDate, getOvulationDate, addDays } from '@/lib/cycle'
 import { CalendarHeart, Sparkles, AlertCircle } from 'lucide-react'
+import { formatDateVN } from '@/components/DateInput'
 
 export default function ImportantCycleDates({ settings }: { settings: CycleSettings }) {
   const nextPeriod = getNextPeriodDate(settings)
@@ -10,7 +10,7 @@ export default function ImportantCycleDates({ settings }: { settings: CycleSetti
   const prePeriodEnd = addDays(nextPeriod, -1)
 
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString('vi-VN', { day: '2-digit', month: 'short', year: 'numeric' })
+    return formatDateVN(date)
   }
 
   return (

@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { CycleSettings } from '@/lib/cycle'
 import toast from 'react-hot-toast'
+import DateInput from '@/components/DateInput'
 
 export default function CycleSettingsForm({ initialSettings, onSave }: { initialSettings?: CycleSettings | null, onSave: (s: CycleSettings) => void }) {
   const [isOpen, setIsOpen] = useState(!initialSettings)
@@ -57,10 +58,9 @@ export default function CycleSettingsForm({ initialSettings, onSave }: { initial
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-foreground/80 mb-2">Ngày bắt đầu kỳ kinh gần nhất</label>
-          <input 
-            type="date" 
+          <DateInput 
             value={lastPeriodStart}
-            onChange={e => setLastPeriodStart(e.target.value)}
+            onChange={setLastPeriodStart}
             className="w-full bg-background border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
           />
         </div>

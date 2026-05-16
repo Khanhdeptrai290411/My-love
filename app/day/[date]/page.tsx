@@ -10,6 +10,7 @@ import Link from 'next/link'
 import toast from 'react-hot-toast'
 import HeartLoader from '@/components/HeartLoader'
 import { Camera, Image as ImageIcon, Heart, Star, Sparkles, Smile, MessageSquare, ArrowLeft } from 'lucide-react'
+import { formatDateForDisplay } from '@/components/DateInput'
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -197,7 +198,7 @@ export default function DayDetailPage({ params }: { params: { date: string } }) 
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="flex items-center justify-between">
           <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">
-            {date}
+            {formatDateForDisplay(date)}
           </h1>
           <Link
             href="/review"
@@ -223,7 +224,7 @@ export default function DayDetailPage({ params }: { params: { date: string } }) 
         <div className="glass-card p-6 md:p-8 border-2 border-primary/20">
           <h2 className="text-2xl font-bold mb-2 text-foreground flex items-center gap-2">
             <Heart className="text-primary fill-primary" size={24} /> 
-            Cập nhật ngày {date}
+            Cập nhật ngày {formatDateForDisplay(date)}
           </h2>
           <p className="text-foreground/70 mb-6">
             Bạn có thể thêm hoặc sửa cảm xúc và đăng bài cho ngày này (bù ngày đã quên).

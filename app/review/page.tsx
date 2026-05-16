@@ -8,6 +8,7 @@ import Navbar from '@/components/Navbar'
 import Link from 'next/link'
 import { getDaysInYear, getDateKey, getDayOfWeek } from '@/lib/review-utils'
 import HeartLoader from '@/components/HeartLoader'
+import { formatDateForDisplay } from '@/components/DateInput'
 
 const fetcher = async (url: string) => {
   const res = await fetch(url)
@@ -201,7 +202,7 @@ export default function ReviewPage() {
                               key={dateKey}
                               href={`/day/${dateKey}`}
                               className="w-3 h-3 rounded overflow-hidden hover:ring-2 hover:ring-pink-500 transition relative"
-                              title={`${dateKey} - Mình: ${myLabel} | Người ấy: ${partnerLabel}`}
+                              title={`${formatDateForDisplay(dateKey)} - Mình: ${myLabel} | Người ấy: ${partnerLabel}`}
                             >
                               <div className="absolute inset-0 flex">
                                 <div className={`w-1/2 ${myColor}`}></div>
@@ -217,7 +218,7 @@ export default function ReviewPage() {
                             key={dateKey}
                             href={`/day/${dateKey}`}
                             className={`w-3 h-3 rounded ${getMoodColor(cellData.mood, cellData.intensity)} hover:ring-2 hover:ring-pink-500 transition`}
-                            title={`${dateKey}${cellData.mood ? ` - ${MOOD_LABELS[cellData.mood] || cellData.mood} (${cellData.intensity})` : ''}`}
+                            title={`${formatDateForDisplay(dateKey)}${cellData.mood ? ` - ${MOOD_LABELS[cellData.mood] || cellData.mood} (${cellData.intensity})` : ''}`}
                           />
                         )
                       })}

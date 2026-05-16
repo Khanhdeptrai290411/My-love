@@ -8,6 +8,7 @@ import Navbar from '@/components/Navbar'
 import Image from 'next/image'
 import Link from 'next/link'
 import HeartLoader from '@/components/HeartLoader'
+import { formatDateForDisplay } from '@/components/DateInput'
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -47,7 +48,7 @@ export default function StarsPage() {
                 className="glass-card hover:-translate-y-1 p-6 border border-border transition-all duration-300 group"
               >
                 <div className="flex items-center justify-between mb-4">
-                  <span className="text-sm font-medium text-foreground/50 bg-background px-3 py-1 rounded-full">{post.date}</span>
+                  <span className="text-sm font-medium text-foreground/50 bg-background px-3 py-1 rounded-full">{formatDateForDisplay(post.date)}</span>
                   <span className="text-yellow-500 text-lg group-hover:scale-125 transition-transform duration-300 drop-shadow-sm">⭐</span>
                 </div>
                 <p className="text-foreground/90 font-medium mb-4 leading-relaxed line-clamp-3">{post.content}</p>

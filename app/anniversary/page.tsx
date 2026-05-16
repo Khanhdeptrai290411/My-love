@@ -10,6 +10,7 @@ import { format, differenceInDays } from 'date-fns'
 import { vi } from 'date-fns/locale'
 import { Heart, Plus, Calendar, Trash2, Clock } from 'lucide-react'
 import HeartLoader from '@/components/HeartLoader'
+import DateInput, { parseLocalDate } from '@/components/DateInput'
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -114,12 +115,10 @@ export default function AnniversaryPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-foreground/80 mb-2">Ngày kỷ niệm</label>
-                  <input
-                    type="date"
+                  <DateInput
                     value={date}
-                    onChange={(e) => setDate(e.target.value)}
+                    onChange={setDate}
                     required
-                    className="w-full px-4 py-3 rounded-xl border-border bg-background"
                   />
                 </div>
               </div>
@@ -155,9 +154,10 @@ export default function AnniversaryPage() {
         <div className="space-y-6 relative before:absolute before:inset-0 before:ml-[1.45rem] md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:-z-10 before:bg-gradient-to-b before:from-primary/50 before:to-accent/50">
           {data?.events?.length > 0 ? (
             data.events.map((event: any, index: number) => {
-              const eventDate = new Date(event.date)
+              const eventDate = parseLocalDate(event.date)
               // Calculate past or future
               const today = new Date()
+              today.setHours(0, 0, 0, 0)
               const diff = differenceInDays(today, eventDate)
               const formatDiff = () => {
                 if (diff === 0) return 'Hôm nay'

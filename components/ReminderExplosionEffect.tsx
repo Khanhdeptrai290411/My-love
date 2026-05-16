@@ -4,20 +4,19 @@ import { useEffect, useState, useRef, useMemo } from 'react'
 import { useSession } from 'next-auth/react'
 import useSWR from 'swr'
 import { Bell, X, Calendar } from 'lucide-react'
-import { format } from 'date-fns'
+import { formatDateForDisplay } from '@/components/DateInput'
 
 const fetcher = (url: string) => fetch(url).then(res => res.json())
 
-const isDateInRange = (currentDate: Date, startDateStr: string, endDateStr: string) => {
-  const today = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate())
+const isDateInRange = (currentDate: Date, startDateStr: string, endDateStr: string, startTimeStr: string, endTimeStr: string) => {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const todayKey = `${currentDate.getFullYear()}-${pad(currentDate.getMonth() + 1)}-${pad(currentDate.getDate())}`
+  const timeKey = `${pad(currentDate.getHours())}:${pad(currentDate.getMinutes())}`
   
-  const startD = new Date(startDateStr)
-  const endD = new Date(endDateStr)
-  
-  const start = new Date(startD.getFullYear(), startD.getMonth(), startD.getDate())
-  const end = new Date(endD.getFullYear(), endD.getMonth(), endD.getDate())
-  
-  return today.getTime() >= start.getTime() && today.getTime() <= end.getTime()
+  const isDateValid = todayKey >= startDateStr && todayKey <= endDateStr
+  const isTimeValid = timeKey >= startTimeStr && timeKey <= endTimeStr
+
+  return isDateValid && isTimeValid
 }
 
 export default function ReminderExplosionEffect() {
@@ -33,7 +32,7 @@ export default function ReminderExplosionEffect() {
     const now = new Date()
     return data.reminders.filter((r: any) => {
       if (!r.isActive) return false
-      return isDateInRange(now, r.startDate, r.endDate)
+      return isDateInRange(now, r.startDate, r.endDate, r.remindStartTime || '00:00', r.remindEndTime || '23:59')
     })
   }, [data?.reminders])
 
@@ -228,7 +227,10 @@ export default function ReminderExplosionEffect() {
                       <p className="text-foreground/80 italic mb-3">&quot;{r.content}&quot;</p>
                       <div className="flex items-center gap-1.5 text-xs font-semibold text-primary/80 bg-primary/10 w-fit px-2 py-1 rounded-md">
                         <Calendar size={14} /> 
-                        {format(new Date(r.startDate), 'dd/MM HH:mm')} - {format(new Date(r.endDate), 'dd/MM HH:mm')}
+                        {formatDateForDisplay(r.startDate)} - {formatDateForDisplay(r.endDate)}
+                      </div>
+                      <div className="flex items-center gap-1 text-xs mt-1 text-foreground/60">
+                        <Calendar size={12}/> Mỗi ngày {r.remindStartTime} - {r.remindEndTime}
                       </div>
                     </div>
                   </div>

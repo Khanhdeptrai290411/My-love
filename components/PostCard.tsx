@@ -7,6 +7,7 @@ import LazyImage from '@/components/LazyImage'
 import LinkPreview from '@/components/LinkPreview'
 import toast from 'react-hot-toast'
 import useSWR from 'swr'
+import { formatDateVN } from '@/components/DateInput'
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -616,7 +617,7 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
     if (minutes < 60) return `${minutes} phút trước`
     if (hours < 24) return `${hours} giờ trước`
     if (days < 7) return `${days} ngày trước`
-    return date.toLocaleDateString('vi-VN')
+    return formatDateVN(date)
   }
 
   const renderContentWithLinks = (content: string) => {

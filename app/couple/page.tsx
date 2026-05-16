@@ -7,6 +7,7 @@ import useSWR from 'swr'
 import Navbar from '@/components/Navbar'
 import toast from 'react-hot-toast'
 import HeartLoader from '@/components/HeartLoader'
+import DateInput, { formatDateForDisplay } from '@/components/DateInput'
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -126,7 +127,7 @@ export default function CouplePage() {
               {coupleData.couple.startDate && (
                 <p className="text-gray-700 mb-2">
                   <span className="font-semibold">Ngày hẹn hò:</span>{' '}
-                  {coupleData.couple.startDate}
+                  {formatDateForDisplay(coupleData.couple.startDate)}
                 </p>
               )}
               <div className="mt-4">
@@ -175,13 +176,11 @@ export default function CouplePage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Ngày hẹn hò
                 </label>
-                <input
-                  type="date"
+                <DateInput
                   value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  max={new Date().toISOString().split('T')[0]}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-gray-900 bg-white"
+                  onChange={setStartDate}
                   required
+                  className="!border-gray-300 !text-gray-900 bg-white focus:!ring-pink-500"
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   Ví dụ: 03/12/2020

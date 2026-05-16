@@ -31,8 +31,10 @@ export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const { title, content, startDate, endDate, icon, isActive } = await req.json()
-    if (!title || !startDate || !endDate || !content) return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
+    const { title, content, startDate, endDate, remindStartTime, remindEndTime, timezone, icon, isActive } = await req.json()
+    if (!title || !startDate || !endDate || !remindStartTime || !remindEndTime || !content) {
+      return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
+    }
 
     await connectDB()
     const user = await User.findOne({ email: session.user.email })
@@ -40,11 +42,15 @@ export async function POST(req: NextRequest) {
     if (!couple) return NextResponse.json({ error: 'Couple not found' }, { status: 404 })
 
     const newReminder = await Reminder.create({
+      userId: user._id.toString(),
       coupleId: couple._id.toString(),
       title,
       content,
-      startDate: new Date(startDate),
-      endDate: new Date(endDate),
+      startDate,
+      endDate,
+      remindStartTime,
+      remindEndTime,
+      timezone: timezone || 'Asia/Ho_Chi_Minh',
       icon: icon || '✨',
       isActive: isActive !== undefined ? isActive : true
     })
