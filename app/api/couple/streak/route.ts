@@ -45,9 +45,9 @@ export async function GET() {
     const partnerActiveDates = new Set(partnerEvents.map(e => e._id))
 
     // Collect all dates
-    const allDates = new Set([...userActiveDates, ...partnerActiveDates])
+    const allDates = new Set([...Array.from(userActiveDates), ...Array.from(partnerActiveDates)])
 
-    const activityLogs = Array.from(allDates).map(date => ({
+    const activityLogs = Array.from(allDates).map((date: any) => ({
       date,
       userActive: userActiveDates.has(date),
       partnerActive: partnerActiveDates.has(date)
