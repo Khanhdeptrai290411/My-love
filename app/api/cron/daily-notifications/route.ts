@@ -30,7 +30,7 @@ export async function GET(req: Request) {
       day: '2-digit'
     })
     const parts = formatter.formatToParts(now)
-    const mapped = parts.reduce((acc, part) => {
+    const mapped = parts.reduce((acc: any, part: any) => {
       acc[part.type] = part.value
       return acc
     }, {} as any)
@@ -52,7 +52,7 @@ export async function GET(req: Request) {
       const couple = await Couple.findById(coupleId)
       if (!couple) continue
 
-      const partnerId = couple.memberIds.find(id => id.toString() !== userId.toString())
+      const partnerId = couple.memberIds.find((id: any) => id.toString() !== userId.toString())
       const partner = partnerId ? await User.findById(partnerId) : null
 
       // --- 1. STREAK REMINDER ---
@@ -188,7 +188,7 @@ export async function GET(req: Request) {
             body = `${r.icon || '✨'} ${r.title}: ${r.content} (${r.remindStartTime})`
           } else {
             title = `🔔 Bạn có ${reminders.length} lời nhắc hôm nay`
-            body = reminders.map(r => `${r.icon || '✨'} ${r.title} (${r.remindStartTime})`).join(', ')
+            body = reminders.map((r: any) => `${r.icon || '✨'} ${r.title} (${r.remindStartTime})`).join(', ')
             if (body.length > 100) body = body.substring(0, 97) + '...'
           }
 
