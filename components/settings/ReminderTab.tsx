@@ -118,6 +118,15 @@ export default function ReminderTab() {
         )}
       </div>
 
+      <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 p-4 rounded-xl flex gap-3 items-start animate-in fade-in slide-in-from-top-2 duration-300">
+        <div className="text-amber-500 shrink-0 mt-0.5">⚠️</div>
+        <div className="text-sm text-amber-800 dark:text-amber-200/80 leading-relaxed">
+          <p className="font-bold mb-1">Lưu ý về gói miễn phí (Vercel Hobby):</p>
+          Các lời nhắc sẽ được nhắc trong <strong>thông báo tổng hợp hằng ngày</strong> (khoảng 21:00). 
+          Thời gian cụ thể bên dưới chỉ dùng để hiển thị trong nội dung thông báo. Muốn nhắc đúng giờ tuyệt đối cần nâng cấp hệ thống scheduler.
+        </div>
+      </div>
+
       {isAdding && (
         <div className="bg-secondary/30 rounded-2xl p-6 border border-border">
           <h4 className="text-lg font-bold text-primary mb-4">
@@ -168,7 +177,7 @@ export default function ReminderTab() {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground/80">Giờ bắt đầu nhắc mỗi ngày</label>
+                <label className="text-sm font-medium text-foreground/80">Giờ bắt đầu nhắc (Hiển thị trong digest)</label>
                 <input
                   required
                   type="time"
@@ -178,7 +187,7 @@ export default function ReminderTab() {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground/80">Giờ kết thúc nhắc mỗi ngày</label>
+                <label className="text-sm font-medium text-foreground/80">Giờ kết thúc nhắc (Hiển thị trong digest)</label>
                 <input
                   required
                   type="time"
