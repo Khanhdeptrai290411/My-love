@@ -12,12 +12,28 @@ interface DateInputProps {
   className?: string
 }
 
-// Format YYYY-MM-DD to DD/MM/YYYY
-export const formatDateForDisplay = (dateKey: string) => {
-  if (!dateKey) return ''
-  const parts = dateKey.split('-')
-  if (parts.length !== 3) return dateKey
-  return `${parts[2]}/${parts[1]}/${parts[0]}`
+export const formatDateForDisplay = (dateInput: any) => {
+  if (!dateInput) return ''
+  
+  // If it's already YYYY-MM-DD string
+  if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
+    const parts = dateInput.split('-')
+    return `${parts[2]}/${parts[1]}/${parts[0]}`
+  }
+  
+  // If it's a full ISO string or Date object
+  try {
+    const date = new Date(dateInput)
+    if (isNaN(date.getTime())) return String(dateInput)
+    
+    // Use local time components to avoid UTC shift
+    const day = String(date.getDate()).padStart(2, '0')
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const year = date.getFullYear()
+    return `${day}/${month}/${year}`
+  } catch (e) {
+    return String(dateInput)
+  }
 }
 
 // Format Date object to DD/MM/YYYY
@@ -27,6 +43,15 @@ export const formatDateVN = (date: Date) => {
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const year = date.getFullYear()
   return `${day}/${month}/${year}`
+}
+
+// Format HH:mm to HH:mm (ensures safe string handling)
+export const formatTimeForDisplay = (timeKey: any) => {
+  if (!timeKey) return ''
+  if (typeof timeKey !== 'string') return ''
+  const parts = timeKey.split(':')
+  if (parts.length < 2) return timeKey
+  return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`
 }
 
 // Format DD/MM/YYYY to YYYY-MM-DD
