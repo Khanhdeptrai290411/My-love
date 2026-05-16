@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import { Providers } from './providers'
 import { Toaster } from 'react-hot-toast'
+import PwaRegister from '@/components/PwaRegister'
 
 export const metadata: Metadata = {
   title: 'My Love - Couple App',
@@ -37,6 +38,7 @@ export default function RootLayout({
         <Providers>
           {children}
           <Toaster position="top-right" />
+          <PwaRegister />
         </Providers>
       </body>
     </html>

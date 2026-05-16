@@ -11,6 +11,7 @@ import { format } from 'date-fns'
 import { Edit2, LogOut, Copy, Heart } from 'lucide-react'
 import HeartLoader from '@/components/HeartLoader'
 import ProfileTabs from '@/components/settings/ProfileTabs'
+import NotificationSettings from '@/components/settings/NotificationSettings'
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -156,6 +157,9 @@ export default function SettingsPage() {
             </div>
           </section>
         )}
+
+        {/* Notification Settings */}
+        <NotificationSettings />
 
         {/* Action Section */}
         <section className="flex justify-end">
