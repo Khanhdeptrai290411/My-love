@@ -33,7 +33,7 @@ export default function CycleDailyMessageCard({ selectedDate, settings }: { sele
       </div>
       
       <div className="bg-background/80 p-5 lg:p-8 rounded-2xl border border-border italic text-foreground/90 font-medium text-lg lg:text-xl leading-relaxed shadow-sm text-center lg:text-left">
-        "{message}"
+        &quot;{message}&quot;
       </div>
     </div>
   )
