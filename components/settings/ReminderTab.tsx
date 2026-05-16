@@ -4,7 +4,7 @@ import { useState } from 'react'
 import useSWR from 'swr'
 import toast from 'react-hot-toast'
 import { Plus, Save, X as XIcon, Edit2, Trash2, Calendar, Clock, Sparkles } from 'lucide-react'
-import DateInput, { formatDateForDisplay } from '@/components/DateInput'
+import DateInput, { formatDateForDisplay, formatTimeForDisplay } from '@/components/DateInput'
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 const EMOJIS = ['💖', '🌸', '🎁', '🎂', '🥰', '✨', '💌', '😘', '🎉', '🌟', '🔔', '🌹']
