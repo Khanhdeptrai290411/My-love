@@ -61,8 +61,8 @@ export async function GET() {
       return NextResponse.json({
         status: 'NONE',
         message: 'Hôm nay tụi mình chưa check-in mood',
-        partnerGender: partner?.gender || 'unknown',
-        myGender: user.gender || 'unknown',
+        partnerGender: (partner as any)?.gender || 'unknown',
+        myGender: (user as any).gender || 'unknown',
         moods: {
           me: null,
           partner: null,
@@ -79,8 +79,8 @@ export async function GET() {
         message: myMood
           ? 'Bạn đã check-in, người ấy thì chưa'
           : 'Người ấy đã check-in, bạn thì chưa',
-        partnerGender: partner?.gender || 'unknown',
-        myGender: user.gender || 'unknown',
+        partnerGender: (partner as any)?.gender || 'unknown',
+        myGender: (user as any).gender || 'unknown',
         moods: {
           me: myMood
             ? {
@@ -105,8 +105,8 @@ export async function GET() {
       ? String(partnerDoc.name)
       : 'người ấy'
     
-    const partnerGender = partnerDoc?.gender || 'unknown'
-    const myGender = user.gender || 'unknown'
+    const partnerGender = (partnerDoc as any)?.gender || 'unknown'
+    const myGender = (user as any).gender || 'unknown'
 
     if (myMood.mood === partnerMood.mood) {
       return NextResponse.json({
