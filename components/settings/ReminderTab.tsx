@@ -343,12 +343,6 @@ export default function ReminderTab() {
           </div>
         )}
       </div>
-        {(!data?.reminders || data.reminders.length === 0) && !isAdding && (
-          <div className="col-span-full text-center py-10 text-foreground/50">
-            Chưa có lời nhắc nào. Hãy tạo một lời nhắc để tạo bất ngờ nhé! 💖
-          </div>
-        )}
-      </div>
     </div>
   )
 }
