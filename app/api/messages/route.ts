@@ -5,6 +5,8 @@ import connectDB from '@/lib/mongodb'
 import { Message } from '@/models/Message'
 import { Couple } from '@/models/Couple'
 import { User } from '@/models/User'
+import { NotificationSetting } from '@/models/NotificationSetting'
+import { sendPushToUser } from '@/lib/push'
 
 export async function GET(req: NextRequest) {
   try {
@@ -94,6 +96,31 @@ export async function POST(req: NextRequest) {
     })
 
     await message.populate('senderId', 'name email image')
+
+    // --- REAL-TIME: Notify partner when a new message is sent ---
+    try {
+      const partnerId = couple.memberIds.find((id: any) => id.toString() !== user._id.toString())
+      if (partnerId) {
+        const partnerSettings = await NotificationSetting.findOne({ userId: partnerId })
+        if (partnerSettings?.pushEnabled) {
+          const isImage = !!imageUrl && !text
+          const preview = text?.trim().length > 60
+            ? text.trim().substring(0, 57) + '...'
+            : text?.trim()
+          const bodyText = isImage ? '[Anh]' : (preview || '[Tin nhan]')
+
+          await sendPushToUser(partnerId.toString(), {
+            title: `${user.name || 'Nguoi ay'} vua gui tin nhan`,
+            body: bodyText,
+            type: 'chat',
+            actionUrl: '/chat',
+            dedupeKey: `message:${message._id}:${partnerId}`
+          })
+        }
+      }
+    } catch (notifyErr) {
+      console.warn('Failed to notify partner of new message:', notifyErr)
+    }
 
     return NextResponse.json({
       message: {

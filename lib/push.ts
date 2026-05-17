@@ -20,7 +20,7 @@ export interface PushPayload {
   icon?: string
   badge?: string
   actionUrl?: string
-  type: 'streak' | 'anniversary' | 'customReminder' | 'mood' | 'cycle' | 'dailyMessage' | 'inactive' | 'newPost' | 'test'
+  type: 'streak' | 'anniversary' | 'customReminder' | 'mood' | 'cycle' | 'dailyMessage' | 'inactive' | 'newPost' | 'chat' | 'test'
   dedupeKey: string
 }
 

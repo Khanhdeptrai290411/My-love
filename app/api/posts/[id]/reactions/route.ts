@@ -6,6 +6,8 @@ import { Reaction, ReactionType } from '@/models/Reaction'
 import { Post } from '@/models/Post'
 import { User } from '@/models/User'
 import { Couple } from '@/models/Couple'
+import { NotificationSetting } from '@/models/NotificationSetting'
+import { sendPushToUser } from '@/lib/push'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -147,6 +149,30 @@ export async function POST(
     }
 
     await reaction.populate('userId', 'name email image')
+
+    // --- REAL-TIME: Notify post author when someone reacts (only on NEW reaction, not update) ---
+    if (!existingReaction) {
+      try {
+        const postAuthorId = post.authorId.toString()
+        if (postAuthorId !== user._id.toString()) {
+          const authorSettings = await NotificationSetting.findOne({ userId: postAuthorId })
+          if (authorSettings?.pushEnabled) {
+            const reactionEmoji: Record<string, string> = {
+              like: 'thich', love: 'yeu thich', haha: 'ha ha', wow: 'wow', sad: 'buon', angry: 'phan no'
+            }
+            await sendPushToUser(postAuthorId, {
+              title: `${user.name || 'Nguoi ay'} da react bai viet cua ban!`,
+              body: `Ho da bieu cam: ${reactionEmoji[type] || type}`,
+              type: 'newPost',
+              actionUrl: `/post/${post._id}`,
+              dedupeKey: `reaction:${post._id}:${user._id}:${type}`
+            })
+          }
+        }
+      } catch (notifyErr) {
+        console.warn('Failed to notify on reaction:', notifyErr)
+      }
+    }
 
     return NextResponse.json({
       reaction: {

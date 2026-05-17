@@ -6,6 +6,8 @@ import { Comment } from '@/models/Comment'
 import { Post } from '@/models/Post'
 import { User } from '@/models/User'
 import { Couple } from '@/models/Couple'
+import { NotificationSetting } from '@/models/NotificationSetting'
+import { sendPushToUser } from '@/lib/push'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -113,6 +115,27 @@ export async function POST(
     })
 
     await comment.populate('userId', 'name email image')
+
+    // --- REAL-TIME: Notify post author when someone comments ---
+    try {
+      const postAuthorId = post.authorId.toString()
+      // Don't notify if user is commenting on their own post
+      if (postAuthorId !== user._id.toString()) {
+        const authorSettings = await NotificationSetting.findOne({ userId: postAuthorId })
+        if (authorSettings?.pushEnabled) {
+          const preview = text.trim().length > 60 ? text.trim().substring(0, 57) + '...' : text.trim()
+          await sendPushToUser(postAuthorId, {
+            title: `${user.name || 'Nguoi ay'} vua binh luan!`,
+            body: preview,
+            type: 'newPost',
+            actionUrl: `/post/${post._id}`,
+            dedupeKey: `comment:${comment._id}:${postAuthorId}`
+          })
+        }
+      }
+    } catch (notifyErr) {
+      console.warn('Failed to notify on comment:', notifyErr)
+    }
 
     return NextResponse.json({
       comment: {
