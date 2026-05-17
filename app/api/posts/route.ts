@@ -6,6 +6,8 @@ import { Post } from '@/models/Post'
 import { Couple } from '@/models/Couple'
 import { User } from '@/models/User'
 import { getTodayDate } from '@/lib/utils'
+import { NotificationSetting } from '@/models/NotificationSetting'
+import { sendPushToUser } from '@/lib/push'
 import mongoose from 'mongoose'
 
 export const runtime = 'nodejs'
@@ -404,6 +406,29 @@ export async function POST(req: NextRequest) {
         images: postImages,
       })
       console.log('Post created with images:', post.images?.length || 0)
+      // --- REAL-TIME: Notify partner when a new post is created ---
+      try {
+        const partnerId = couple.memberIds.find((id: any) => id.toString() !== user._id.toString())
+        if (partnerId) {
+          const partnerSettings = await NotificationSetting.findOne({ userId: partnerId })
+          if (partnerSettings?.newPostEnabled) {
+            const preview = content?.length > 50 ? content.substring(0, 47) + '...' : content
+            const hasImages = postImages.length > 0
+            const bodyText = hasImages
+              ? `[anh] ${preview || "Ky niem moi"} (${postImages.length} anh)`
+              : (preview || "Ky niem moi")
+            await sendPushToUser(partnerId.toString(), {
+              title: `${user.name || "Nguoi ay"} vua dang bai moi!`,
+              body: bodyText,
+              type: 'newPost',
+              actionUrl: `/day/${useDate}`,
+              dedupeKey: `newPost:${post._id}:${partnerId}`
+            })
+          }
+        }
+      } catch (notifyErr) {
+        console.warn('Failed to notify partner of new post:', notifyErr)
+      }
     }
 
     return NextResponse.json({

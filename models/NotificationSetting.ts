@@ -12,6 +12,7 @@ export interface INotificationSetting extends Document {
   cycleEnabled: boolean;
   dailyMessageEnabled: boolean;
   inactiveEnabled: boolean;
+  newPostEnabled: boolean;
   
   cycleWordingMode: 'private' | 'clear';
   
@@ -40,6 +41,7 @@ const NotificationSettingSchema = new Schema<INotificationSetting>({
   cycleEnabled: { type: Boolean, default: true },
   dailyMessageEnabled: { type: Boolean, default: true },
   inactiveEnabled: { type: Boolean, default: true },
+  newPostEnabled: { type: Boolean, default: true },
   
   cycleWordingMode: { type: String, enum: ['private', 'clear'], default: 'private' },
   

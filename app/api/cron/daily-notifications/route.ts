@@ -8,8 +8,6 @@ import { Mood } from '@/models/Mood'
 import { Post } from '@/models/Post'
 import { Anniversary } from '@/models/Anniversary'
 import { sendPushToUser } from '@/lib/push'
-import { getCycleDayInfo, getCycleForecast } from '@/lib/cycle'
-import { getFallbackQuote } from '@/lib/quotes'
 
 export const dynamic = 'force-dynamic'
 
@@ -93,35 +91,7 @@ export async function GET(req: Request) {
         }
       }
 
-      // --- 3. CYCLE REMINDER ---
-      if (setting.cycleEnabled && couple.cycleSettings) {
-        // If user is male, send forecast for partner
-        // If user is female, send info for herself
-        const isMale = user.gender === 'male'
-        const cycleInfo = getCycleDayInfo(now, couple.cycleSettings as any)
-        const forecast = getCycleForecast(cycleInfo.phase)
-
-        if (forecast) {
-          let title = '🌸 Dự báo chu kỳ'
-          let body = ''
-
-          if (isMale && partner?.gender === 'female') {
-            body = `Hôm nay người ấy đang ở giai đoạn ${forecast.status}. ${forecast.advice}`
-          } else if (user.gender === 'female') {
-            body = `Bạn đang ở giai đoạn ${forecast.status}. Hãy chú ý sức khỏe nhé!`
-          }
-
-          if (body) {
-            await sendPushToUser(userId, {
-              title,
-              body,
-              type: 'cycle',
-              dedupeKey: `cycle:${todayKey}:${userId}`
-            })
-            totalSent++
-          }
-        }
-      }
+      // CYCLE & DAILY MESSAGE → moved to morning-notifications cron (08:00 VN)
 
       // --- 4. MOOD CHECK-IN REMINDER ---
       if (setting.moodEnabled) {
@@ -137,17 +107,8 @@ export async function GET(req: Request) {
         }
       }
 
-      // --- 5. DAILY MESSAGE REMINDER ---
-      if (setting.dailyMessageEnabled) {
-        const quote = getFallbackQuote(todayKey, coupleId.toString(), partner?.gender || 'unknown')
-        await sendPushToUser(userId, {
-          title: '💌 Lời nhắn yêu thương',
-          body: quote,
-          type: 'dailyMessage',
-          dedupeKey: `dailyMessage:${todayKey}:${userId}`
-        })
-        totalSent++
-      }
+      // DAILY MESSAGE → moved to morning-notifications cron (08:00 VN)
+
 
       // --- 6. INACTIVE RELATIONSHIP REMINDER ---
       if (setting.inactiveEnabled) {
