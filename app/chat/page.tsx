@@ -19,8 +19,18 @@ interface PendingImage {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function formatMessageTime(date: Date) {
-  return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+function isSameDay(a: Date, b: Date) {
+  return a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+}
+
+function formatMessageTime(msgDate: Date, now = new Date()) {
+  if (isSameDay(msgDate, now)) {
+    return msgDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+  }
+  return msgDate.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    + ' ' + msgDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
 }
 
 function formatDateDivider(date: Date) {
@@ -35,12 +45,6 @@ function formatDateDivider(date: Date) {
   return date.toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'numeric', year: 'numeric' })
 }
 
-function isSameDay(a: Date, b: Date) {
-  return a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-}
-
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function ChatPage() {
@@ -51,7 +55,6 @@ export default function ChatPage() {
   const [pendingImages, setPendingImages] = useState<PendingImage[]>([])
   const [uploadingImages, setUploadingImages] = useState<Record<string, boolean>>({})
   const [selectedMsg, setSelectedMsg] = useState<string | null>(null)
-  const [altPressed, setAltPressed] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const inputRef = useRef<HTMLTextAreaElement | null>(null)
@@ -69,23 +72,6 @@ export default function ChatPage() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messagesData])
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Alt') setAltPressed(true)
-    }
-    const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.key === 'Alt') setAltPressed(false)
-    }
-    
-    window.addEventListener('keydown', handleKeyDown)
-    window.addEventListener('keyup', handleKeyUp)
-    
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown)
-      window.removeEventListener('keyup', handleKeyUp)
-    }
-  }, [])
 
   const handleAddImage = (file: File) => {
     const id = Date.now().toString() + Math.random().toString(36).substr(2, 9)
@@ -243,7 +229,8 @@ export default function ChatPage() {
 
             {/* Bubble */}
             <div
-              onClick={() => setSelectedMsg(selectedMsg === msg.id ? null : msg.id)}
+              title={formatMessageTime(msgDate)}
+              onClick={() => setSelectedMsg(prev => prev === msg.id ? null : msg.id)}
               className={
                 isMe
                   ? isGroupStart
@@ -269,9 +256,11 @@ export default function ChatPage() {
               {msg.text && <p className="text-sm leading-relaxed break-words whitespace-pre-wrap">{msg.text}</p>}
             </div>
 
-            {/* Timestamp — show only on click or Alt key */}
-            {(selectedMsg === msg.id || altPressed) && (
-              <span className={`text-[10px] text-foreground/40 mt-1 ${isMe ? 'mr-1' : 'ml-1'} transition-opacity`}>
+            {/* Timestamp — last in group always shows, others on click/tap */}
+            {(isLast || selectedMsg === msg.id) && (
+              <span
+                className={`text-[10px] text-foreground/40 mt-1 ${isMe ? 'mr-1' : 'ml-1'} animate-in fade-in duration-150`}
+              >
                 {formatMessageTime(msgDate)}
               </span>
             )}
